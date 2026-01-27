@@ -1,30 +1,30 @@
-# --- Python & Derleme Dosyaları ---
+# --- PYTHON GENEL ---
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# --- Sanal Ortamlar (Virtual Environments) ---
+.Python
+env/
 venv/
 .venv/
-env/
 .env
 
-# --- IDE ve Editör Ayarları (Repoyu kirletmemeli) ---
+# --- IDE AYARLARI (Gereksiz kalabalık yapmasın) ---
 .vscode/
 .idea/
+*.swp
+
+# --- DATA (Büyük CSV dosyalarını GitHub'a atma) ---
+# Eğer CSV dosyan 100MB'dan küçükse başında # bırakabilirsin.
+# data/netpulse_telemetry_final.csv
+
+# --- MODELLER (İsteğe Bağlı) ---
+# Normalde eğitilmiş modeller büyükse atılmaz ama 
+# senin projen sunum amaçlı olduğu için şimdilik GitHub'da dursun.
+# O yüzden buraları yorum satırı yaptım. İstersen gizleyebilirsin.
+# saved_models/*.h5
+# saved_models/*.pkl
+
+# --- İŞLETİM SİSTEMİ ÇÖPLERİ ---
 .DS_Store
-
-# --- Veri Setleri (Data) ---
-# CSV dosyaları büyük olduğu ve "generate_data.py" ile 
-# tekrar üretilebildiği için repoya yüklemiyoruz.
-data/*.csv
-data/processed/*.csv
-
-# --- Modeller ---
-# .pkl dosyaları çok büyükse buraya ekleyebilirsin. 
-# Ama demo için repoda durmaları iyidir, o yüzden şimdilik yorum satırı yapıyorum.
-# models/saved_objects/*.pkl
-
-# --- Loglar ve Hata Kayıtları ---
-*.log
+Thumbs.db
