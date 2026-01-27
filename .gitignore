@@ -1,0 +1,30 @@
+# --- Python & Derleme Dosyaları ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- Sanal Ortamlar (Virtual Environments) ---
+venv/
+.venv/
+env/
+.env
+
+# --- IDE ve Editör Ayarları (Repoyu kirletmemeli) ---
+.vscode/
+.idea/
+.DS_Store
+
+# --- Veri Setleri (Data) ---
+# CSV dosyaları büyük olduğu ve "generate_data.py" ile 
+# tekrar üretilebildiği için repoya yüklemiyoruz.
+data/*.csv
+data/processed/*.csv
+
+# --- Modeller ---
+# .pkl dosyaları çok büyükse buraya ekleyebilirsin. 
+# Ama demo için repoda durmaları iyidir, o yüzden şimdilik yorum satırı yapıyorum.
+# models/saved_objects/*.pkl
+
+# --- Loglar ve Hata Kayıtları ---
+*.log
