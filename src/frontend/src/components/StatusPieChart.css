@@ -1,0 +1,46 @@
+.status-chart-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    min-height: 300px;
+    /* Reduced from 400px */
+}
+
+.chart-header {
+    margin-bottom: var(--space-sm);
+    text-align: center;
+}
+
+.chart-header h3 {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin-bottom: 0;
+}
+
+.chart-container {
+    width: 100%;
+    height: 220px;
+    /* Reduced from 300px */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.custom-tooltip {
+    background: white;
+    padding: var(--space-sm);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+    border-radius: var(--radius-sm);
+}
+
+.custom-tooltip p {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text-primary);
+}

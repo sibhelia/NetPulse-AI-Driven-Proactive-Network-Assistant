@@ -1,0 +1,272 @@
+.regional-map {
+    width: 100%;
+    padding: var(--space-md);
+    /* Reduced from lg */
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    height: 100%;
+    /* Match height of neighbor */
+    display: flex;
+    flex-direction: column;
+}
+
+.map-header {
+    text-align: center;
+    margin-bottom: var(--space-sm);
+    /* Reduced from lg */
+    flex-shrink: 0;
+}
+
+.map-header h3 {
+    font-size: 1.4rem;
+    /* Slightly smaller */
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0;
+    background: linear-gradient(135deg, var(--purple-soft), var(--blue-medium));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.map-header p {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-top: 4px;
+}
+
+.map-container {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: var(--space-sm);
+    background: var(--navbar-gradient);
+    border-radius: var(--radius-md);
+    flex-grow: 1;
+    /* Fill remaining space */
+    display: flex;
+    align-items: center;
+}
+
+.turkey-map {
+    width: 100%;
+    height: auto;
+    max-height: 250px;
+    /* Limit height */
+}
+
+.turkey-border {
+    transition: all 0.3s ease;
+}
+
+.istanbul-highlight {
+    animation: pulse-highlight 3s ease-in-out infinite;
+}
+
+@keyframes pulse-highlight {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+.region-name {
+    fill: var(--purple-soft);
+    font-size: 22px;
+    font-weight: 800;
+    text-anchor: middle;
+    letter-spacing: 2px;
+}
+
+.location-pin {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pin {
+    transition: r 0.2s ease;
+}
+
+.location-pin:hover .pin {
+    r: 10;
+}
+
+.green-pin {
+    animation: pulse-green 2s ease-in-out infinite;
+}
+
+.yellow-pin {
+    animation: pulse-yellow 2s ease-in-out infinite;
+}
+
+.red-pin {
+    animation: pulse-red 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-green {
+
+    0%,
+    100% {
+        opacity: 0.7;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes pulse-yellow {
+
+    0%,
+    100% {
+        opacity: 0.8;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes pulse-red {
+
+    0%,
+    100% {
+        opacity: 0.9;
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+}
+
+.alert-icon {
+    font-size: 12px;
+    text-anchor: middle;
+    pointer-events: none;
+    animation: bounce 1s ease-in-out infinite;
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+.map-loading {
+    text-align: center;
+    padding: var(--space-xl);
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+}
+
+.pin-tooltip {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    border: 2px solid var(--purple-soft);
+    z-index: 1000;
+    min-width: 200px;
+    animation: fadeIn 0.2s ease;
+}
+
+.pin-tooltip h4 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+}
+
+.pin-tooltip p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: var(--space-xs) 0;
+}
+
+.tooltip-action {
+    font-size: 0.8rem;
+    color: var(--blue-medium);
+    font-weight: 600;
+    margin-top: 8px;
+}
+
+.map-legend {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-lg);
+    margin-top: var(--space-md);
+    /* Reduced from lg */
+    padding: var(--space-sm);
+    /* Reduced from md */
+    background: white;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.legend-pin {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: var(--shadow-sm);
+}
+
+.legend-pin.green {
+    background: #4CAF50;
+}
+
+.legend-pin.yellow {
+    background: #FFC107;
+}
+
+.legend-pin.red {
+    background: #F44336;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@media (max-width: 768px) {
+    .map-legend {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .region-name {
+        font-size: 16px;
+    }
+}

@@ -15,7 +15,8 @@
 
 .stats-overview {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
+    /* 4 columns for All, Green, Yellow, Red */
     gap: var(--space-md);
 }
 
@@ -28,19 +29,35 @@
     flex-direction: column;
     align-items: center;
     gap: var(--space-xs);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
 }
 
+.stat-box:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Color indicators */
 .stat-box.green {
-    border-left: 4px solid var(--green);
+    border-bottom: 4px solid var(--green);
 }
 
 .stat-box.yellow {
-    border-left: 4px solid var(--yellow);
+    border-bottom: 4px solid var(--yellow);
 }
 
 .stat-box.red {
-    border-left: 4px solid var(--red);
+    border-bottom: 4px solid var(--red);
 }
+
+.stat-box.all {
+    border-bottom: 4px solid var(--blue-medium);
+}
+
+/* New "All" style */
 
 .stat-number {
     font-size: 2.5rem;
@@ -54,31 +71,13 @@
     font-weight: 500;
 }
 
-.subscribers-grid {
+/* Visualization Grid (Map + Chart) */
+.viz-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-md);
+    grid-template-columns: 1fr 1fr;
+    /* Equal width for Chart and Map */
+    gap: var(--space-lg);
     margin-top: var(--space-lg);
-}
-
-.column {
-    min-height: 400px;
-}
-
-.column-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: var(--space-md);
-    padding: var(--space-sm);
-    background: var(--bg-card);
-    border-radius: var(--radius-sm);
-    text-align: center;
-}
-
-.cards-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
 }
 
 .loading,
@@ -90,7 +89,17 @@
 }
 
 @media (max-width: 1024px) {
-    .subscribers-grid {
+    .stats-overview {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .viz-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .stats-overview {
         grid-template-columns: 1fr;
     }
 }

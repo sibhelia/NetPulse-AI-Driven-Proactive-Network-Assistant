@@ -389,15 +389,18 @@ def scan_network_batch():
         # İstatistiklere Ekle
         results["counts"][color] += 1
         
-        # Eğer sorunluysa listeye detay ekle (Dashboard'da göstermek için)
-        if color != "GREEN":
-            results["lists"][color].append({
-                "id": sub_id,
-                "name": name,
-                "region": region,
-                "issue": "Yüksek Ping" if color == "YELLOW" else "Bağlantı Kopuk",
-                "metrics": metrics
-            })
+        # Listeye Ekle (ARTIK TÜM ABONELER EKLENİYOR)
+        issue_text = "Stabil"
+        if color == "YELLOW": issue_text = "Yüksek Ping"
+        elif color == "RED": issue_text = "Bağlantı Kopuk"
+        
+        results["lists"][color].append({
+            "id": sub_id,
+            "name": name,
+            "region": region,
+            "issue": issue_text,
+            "metrics": metrics
+        })
             
     return results
 
@@ -487,37 +490,3 @@ async def shutdown_event():
     if background_monitor:
         background_monitor.stop()
     logger.info("👋 NetPulse Backend kapatıldı")
-
-
-# === STARTUP & SHUTDOWN EVENTS ===
-
-@app.on_event("startup")
-async def startup_event():
-    """
-    Backend baÅŸlangÄ±cÄ±nda:
-    1. TÃ¼m 500 abone iÃ§in LSTM cache oluÅŸtur (12 Ã¶lÃ§Ã¼m)
-    2. Otomatik periodic monitoring baÅŸlat (her 5 dakika)
-    """
-    global background_monitor
-    
-    logger.info("ğŸš€ NetPulse Backend baÅŸlatÄ±lÄ±yor...")
-    
-    if lstm_service and lstm_service.is_available:
-        background_monitor = BackgroundMonitor(
-            get_db_func=get_db_connection,
-            lstm_service=lstm_service,
-            simulate_func=simulate_metrics_single
-        )
-        
-        await background_monitor.start()
-        logger.info("âœ… Background monitoring aktif! (500 abone)")
-    else:
-        logger.warning("âš ï¸ LSTM unavailable, background monitoring disabled")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Backend kapatÄ±lÄ±rken monitoring durdur"""
-    if background_monitor:
-        background_monitor.stop()
-    logger.info("ğŸ‘‹ NetPulse Backend kapatÄ±ldÄ±")

@@ -21,10 +21,9 @@ body {
     min-height: 100vh;
 }
 
-/* Smooth Animations */
-* {
-    transition: all 0.2s ease-in-out;
-}
+
+/* Removed global transition - was causing sizing issues */
+
 
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
