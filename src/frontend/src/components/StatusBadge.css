@@ -1,0 +1,28 @@
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 0.4rem 0.8rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-green {
+    background: var(--green-light);
+    color: var(--green);
+}
+
+.status-yellow {
+    background: var(--yellow-light);
+    color: #D97E00;
+}
+
+.status-red {
+    background: var(--red-light);
+    color: var(--red);
+}
+
+.status-icon {
+    font-size: 1rem;
+}

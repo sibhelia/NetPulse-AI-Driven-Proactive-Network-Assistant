@@ -15,6 +15,7 @@ from src.backend.lstm_service import (
     PredictionResult
 )
 from src.backend.status_tracker import StatusTracker
+from src.backend.background_monitor import BackgroundMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,9 @@ lstm_service = LSTMPredictionService(
 
 # Initialize Hybrid Ensemble Model
 hybrid_model = HybridEnsembleModel(rf_weight=0.6, lstm_weight=0.4)
+
+# Background Monitor (initialized at startup)
+background_monitor = None
 
 def get_db_connection():
     try:
@@ -451,3 +455,69 @@ def get_trend_analysis(subscriber_id: int):
             "model_name": "LSTM"
         }
     }
+# === STARTUP & SHUTDOWN EVENTS ===
+
+@app.on_event("startup")
+async def startup_event():
+    """
+    Backend başlangıcında:
+    1. Tüm 500 abone için LSTM cache oluştur (12 ölçüm)
+    2. Otomatik periodic monitoring başlat (her 5 dakika)
+    """
+    global background_monitor
+    
+    logger.info("🚀 NetPulse Backend başlatılıyor...")
+    
+    if lstm_service and lstm_service.is_available:
+        background_monitor = BackgroundMonitor(
+            get_db_func=get_db_connection,
+            lstm_service=lstm_service,
+            simulate_func=simulate_metrics_single
+        )
+        
+        await background_monitor.start()
+        logger.info("✅ Background monitoring aktif! (500 abone)")
+    else:
+        logger.warning("⚠️ LSTM unavailable, background monitoring disabled")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Backend kapatılırken monitoring durdur"""
+    if background_monitor:
+        background_monitor.stop()
+    logger.info("👋 NetPulse Backend kapatıldı")
+
+
+# === STARTUP & SHUTDOWN EVENTS ===
+
+@app.on_event("startup")
+async def startup_event():
+    """
+    Backend baÅŸlangÄ±cÄ±nda:
+    1. TÃ¼m 500 abone iÃ§in LSTM cache oluÅŸtur (12 Ã¶lÃ§Ã¼m)
+    2. Otomatik periodic monitoring baÅŸlat (her 5 dakika)
+    """
+    global background_monitor
+    
+    logger.info("ğŸš€ NetPulse Backend baÅŸlatÄ±lÄ±yor...")
+    
+    if lstm_service and lstm_service.is_available:
+        background_monitor = BackgroundMonitor(
+            get_db_func=get_db_connection,
+            lstm_service=lstm_service,
+            simulate_func=simulate_metrics_single
+        )
+        
+        await background_monitor.start()
+        logger.info("âœ… Background monitoring aktif! (500 abone)")
+    else:
+        logger.warning("âš ï¸ LSTM unavailable, background monitoring disabled")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Backend kapatÄ±lÄ±rken monitoring durdur"""
+    if background_monitor:
+        background_monitor.stop()
+    logger.info("ğŸ‘‹ NetPulse Backend kapatÄ±ldÄ±")

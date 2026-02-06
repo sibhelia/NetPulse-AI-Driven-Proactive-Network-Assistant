@@ -1,0 +1,123 @@
+.detail-page {
+    padding: var(--space-lg) 0;
+    min-height: 100vh;
+}
+
+.back-button {
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-md);
+}
+
+.back-button:hover {
+    background: var(--purple-light);
+    color: white;
+}
+
+.detail-grid {
+    display: grid;
+    gap: var(--space-md);
+}
+
+.info-card h2 {
+    margin-bottom: var(--space-md);
+    color: var(--purple-soft);
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-sm);
+}
+
+.metrics-card {
+    background: linear-gradient(135deg, rgba(139, 127, 199, 0.05), rgba(91, 141, 238, 0.05));
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+}
+
+.metric {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: var(--space-md);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--blue-medium);
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.ai-card,
+.sms-card {
+    background: var(--bg-secondary);
+}
+
+.analysis-section {
+    margin-top: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.model-result {
+    padding: var(--space-sm);
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+}
+
+.confidence {
+    color: var(--purple-soft);
+    font-weight: 600;
+    margin-left: var(--space-xs);
+}
+
+.final-decision {
+    padding: var(--space-md);
+    background: var(--purple-light);
+    color: white;
+    border-radius: var(--radius-sm);
+    margin-top: var(--space-sm);
+}
+
+.sms-info {
+    margin-top: var(--space-md);
+}
+
+.sms-message {
+    margin-top: var(--space-sm);
+    padding: var(--space-md);
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+    font-style: italic;
+}
+
+.chart-card {
+    grid-column: 1 / -1;
+}
+
+.trend-summary {
+    margin-top: var(--space-md);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-sm);
+}

@@ -1,0 +1,43 @@
+:root {
+  /* Primary Background */
+  --bg-primary: #FAFBFC;
+  --bg-secondary: #FFFFFF;
+  --bg-card: #F8F9FA;
+  
+  /* Accent Colors */
+  --purple-soft: #8B7FC7;
+  --purple-light: #B8AED8;
+  --blue-medium: #5B8DEE;
+  --blue-light: #A8C8F7;
+  
+  /* Status Colors */
+  --green: #4CAF50;
+  --green-light: #E8F5E9;
+  --yellow: #FFC107;
+  --yellow-light: #FFF9E6;
+  --red: #F44336;
+  --red-light: #FFEBEE;
+  
+  /* Text */
+  --text-primary: #2C3E50;
+  --text-secondary: #7F8C8D;
+  --text-muted: #BDC3C7;
+  
+  /* Borders & Shadows */
+  --border-color: #E1E8ED;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
+  
+  /* Spacing */
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}

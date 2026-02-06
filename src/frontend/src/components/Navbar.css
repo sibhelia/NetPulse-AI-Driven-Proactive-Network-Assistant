@@ -1,0 +1,43 @@
+.navbar {
+    background: linear-gradient(135deg, var(--purple-soft) 0%, var(--blue-medium) 100%);
+    color: white;
+    padding: var(--space-md) 0;
+    box-shadow: var(--shadow-md);
+}
+
+.navbar-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar-brand h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.navbar-subtitle {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-left: var(--space-xs);
+}
+
+.navbar-stats {
+    display: flex;
+    gap: var(--space-md);
+}
+
+.stat-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    background: rgba(255, 255, 255, 0.2);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+}
+
+.stat-icon {
+    font-size: 1.2rem;
+}

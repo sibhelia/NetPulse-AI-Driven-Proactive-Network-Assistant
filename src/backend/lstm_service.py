@@ -47,7 +47,7 @@ class LSTMPredictionService:
     """
     
     def __init__(self, model_path: str, scaler_path: str, encoder_path: str, 
-                 window_size: int = 12):
+                 window_size: int = 12):  # Production setting
         self.window_size = window_size
         self.model = None
         self.scaler = None
