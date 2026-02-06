@@ -21,8 +21,8 @@ def generate_proactive_message(customer_name, plan, fault_details, gender, sever
     Buna göre Gemini farklı tonlarda mesaj yazar.
     """
     
-    # Hitap Şekli
-    title = "Hanım" if gender == "Kadın" else "Bey"
+    # Profesyonel hitap: Ad Soyad kullan (cinsiyet gereksiz)
+    # gender parametresi backward compatibility için kalıyor
     
     # --- SENARYO 1: SARI ALARM (Sakinleştirici & Önleyici) ---
     if severity == "YELLOW":
@@ -34,7 +34,7 @@ def generate_proactive_message(customer_name, plan, fault_details, gender, sever
         Ton: Sakin, Güven Verici, Profesyonel, Pozitif.
         
         Veriler:
-        - Müşteri: {customer_name} {title}
+        - Müşteri: {customer_name}
         - Paket: {plan}
         - Sebep: {fault_details['cause']} (Bunu çok teknik olmadan söyle)
         - Aksiyon: {fault_details['action']}
@@ -55,7 +55,7 @@ def generate_proactive_message(customer_name, plan, fault_details, gender, sever
         Ton: Ciddi, Çözüm Odaklı, Net, Saygılı.
         
         Veriler:
-        - Müşteri: {customer_name} {title}
+        - Müşteri: {customer_name}
         - Paket: {plan}
         - Tespit: {fault_details['cause']}
         - Ekip/Aksiyon: {fault_details['action']}
@@ -71,7 +71,7 @@ def generate_proactive_message(customer_name, plan, fault_details, gender, sever
     prompt = f"""
     {system_instruction}
     
-    Lütfen yukarıdaki role ve kurallara uygun olarak, {customer_name} {title} için nihai SMS metnini yaz. 
+    Lütfen yukarıdaki role ve kurallara uygun olarak, "Sayın {customer_name}" şeklinde hitap ederek nihai SMS metnini yaz. 
     Sadece SMS içeriğini döndür, başka açıklama yapma.
     """
 
@@ -82,6 +82,6 @@ def generate_proactive_message(customer_name, plan, fault_details, gender, sever
     except Exception:
         # Fallback (Gemini çalışmazsa yedek statik mesajlar)
         if severity == "YELLOW":
-            return f"Sayın {customer_name} {title}, hattınızda anlık yoğunluk tespit edilmiştir. Kesinti yaşamamanız için uzaktan optimizasyon yapıyoruz. Keyifli kullanımlar."
+            return f"Sayın {customer_name}, hattınızda anlık yoğunluk tespit edilmiştir. Kesinti yaşamamanız için uzaktan optimizasyon yapıyoruz. Keyifli kullanımlar."
         else:
-            return f"Sayın {customer_name} {title}, {fault_details['cause']} nedeniyle erişim sorunu yaşanmaktadır. {fault_details['eta']} içinde giderilmesi planlanmaktadır."
+            return f"Sayın {customer_name}, {fault_details['cause']} nedeniyle erişim sorunu yaşanmaktadır. {fault_details['eta']} içinde giderilmesi planlanmaktadır."

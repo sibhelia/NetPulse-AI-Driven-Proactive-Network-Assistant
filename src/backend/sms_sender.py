@@ -1,27 +1,48 @@
+import os
 from twilio.rest import Client
+import logging
 
-# Twilio Paneli'nden alacağın bilgileri buraya yaz:
-ACCOUNT_SID = "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Burayı kendi SID'inle değiştir
-AUTH_TOKEN = "your_auth_token_here"           # Burayı kendi Token'ınla değiştir
-TWILIO_NUMBER = "+1234567890"                 # Twilio'nun sana verdiği numara
-MY_PHONE_NUMBER = "+90536xxxxxxx"             # Kendi telefon numaran (Sibel)
+logger = logging.getLogger(__name__)
 
-def send_real_sms(message_body):
+# Twilio Credentials (Environment Variables)
+ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "demo_mode")
+AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "demo_mode")
+TWILIO_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "+1234567890")
+
+def send_sms(phone_number: str, message: str) -> bool:
+    """
+    Gerçek SMS gönder (Twilio ile) veya demo mode'da logla
+    
+    Args:
+        phone_number: Alıcı telefon numarası (+90 5XX XXX XX XX formatında)
+        message: SMS mesajı
+    
+    Returns:
+        bool: Başarılı ise True
+    """
     try:
-        # Eğer bilgiler girilmediyse hata vermesin, loglayıp geçsin (Demo modu)
-        if "your_auth" in AUTH_TOKEN:
-            print("⚠️ Twilio bilgileri eksik. SMS simülasyon modunda.")
-            return False
-
-        client = Client(ACCOUNT_SID, AUTH_TOKEN)
+        if ACCOUNT_SID == "demo_mode":
+            # Demo Mode - Console'a yaz
+            logger.warning("=" * 60)
+            logger.warning("📱 [DEMO MODE] SMS SİMÜLASYONU")
+            logger.warning("=" * 60)
+            logger.warning(f"📞 Alıcı: {phone_number}")
+            logger.warning(f"📝 Mesaj:\n{message}")
+            logger.warning("=" * 60)
+            logger.warning("ℹ️  Gerçek SMS göndermek için TWILIO_ACCOUNT_SID ayarlayın")
+            logger.warning("=" * 60)
+            return True
         
-        message = client.messages.create(
-            body=message_body,
+        # Gerçek SMS Gönderimi
+        client = Client(ACCOUNT_SID, AUTH_TOKEN)
+        msg = client.messages.create(
+            body=message,
             from_=TWILIO_NUMBER,
-            to=MY_PHONE_NUMBER
+            to=phone_number
         )
-        print(f"✅ SMS Gönderildi! ID: {message.sid}")
+        logger.info(f"✅ SMS Gönderildi! SID: {msg.sid}, To: {phone_number}")
         return True
+        
     except Exception as e:
-        print(f"❌ SMS Hatası: {e}")
+        logger.error(f"❌ SMS Gönderme Hatası: {e}")
         return False

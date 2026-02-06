@@ -6,7 +6,17 @@ import joblib
 import os
 import random
 import time
-from src.backend import llm_service
+import logging
+from datetime import datetime
+from src.backend import llm_service, sms_sender
+from src.backend.lstm_service import (
+    LSTMPredictionService,
+    HybridEnsembleModel,
+    PredictionResult
+)
+from src.backend.status_tracker import StatusTracker
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -21,6 +31,11 @@ app.add_middleware(
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MODEL_PATH = os.path.join(BASE_DIR, 'saved_models', 'netpulse_classifier.pkl')
 
+# LSTM Model Paths
+LSTM_MODEL_PATH = os.path.join(BASE_DIR, 'saved_models', 'netpulse_lstm.h5')
+LSTM_SCALER_PATH = os.path.join(BASE_DIR, 'saved_models', 'lstm_scaler.pkl')
+LSTM_ENCODER_PATH = os.path.join(BASE_DIR, 'saved_models', 'lstm_encoder.pkl')
+
 DB_CONFIG = {
     "dbname": "netpulse_db",
     "user": "postgres",
@@ -29,11 +44,21 @@ DB_CONFIG = {
     "port": "5432"
 }
 
+# Load Random Forest Model
 model = None
 try:
     model = joblib.load(MODEL_PATH)
-except:
-    pass
+    logger.info("✅ Random Forest model loaded")
+except Exception as e:
+    logger.warning(f"⚠️ Random Forest load failed: {e}")
+
+# Initialize LSTM Service
+lstm_service = LSTMPredictionService(
+    LSTM_MODEL_PATH, LSTM_SCALER_PATH, LSTM_ENCODER_PATH
+)
+
+# Initialize Hybrid Ensemble Model
+hybrid_model = HybridEnsembleModel(rf_weight=0.6, lstm_weight=0.4)
 
 def get_db_connection():
     try:
@@ -113,9 +138,13 @@ def classify_subscriber_status(metrics, ai_prediction):
 
 @app.get("/")
 def home():
-    return {"status": "active", "mode": "Enterprise NOC"}
+    return {
+        "status": "active", 
+        "mode": "Enterprise NOC",
+        "lstm_available": lstm_service.is_available
+    }
 
-# --- 1. ENDPOINT: TEKİL ANALİZ (Detay Sayfası İçin) ---
+# --- 1. ENDPOINT: TEKİL ANALİZ (Detay Sayfası İçin) - LSTM ENTEGRE ---
 @app.get("/api/simulate/{subscriber_id}")
 def simulate_network(subscriber_id: int, force_trouble: bool = False):
     conn = get_db_connection()
@@ -131,40 +160,172 @@ def simulate_network(subscriber_id: int, force_trouble: bool = False):
     name, plan, region, gender = customer
     live_data, fault_details, is_faulty = simulate_metrics_single(plan, force_trouble)
     
+    # ===== HYBRID ENSEMBLE PREDICTION =====
+    
+    # 1. Add measurement to LSTM cache
+    if lstm_service.is_available:
+        lstm_service.add_measurement(subscriber_id, live_data)
+        lstm_result = lstm_service.predict(subscriber_id)
+    else:
+        lstm_result = None
+    
+    # 2. Random Forest prediction
     prediction_code = 0
-    status_text = "Normal"
+    rf_confidence = 0.5
     
     if model:
         try:
             prediction_code = int(model.predict(pd.DataFrame([live_data]))[0])
-        except: prediction_code = 0
-
-    if is_faulty and prediction_code == 0: prediction_code = 1
+            rf_proba = model.predict_proba(pd.DataFrame([live_data]))
+            rf_confidence = float(rf_proba.max())
+        except:
+            prediction_code = 0
     
-    # Renk Kodunu Belirle
-    segment_color = classify_subscriber_status(live_data, prediction_code)
-
+    if is_faulty and prediction_code == 0:
+        prediction_code = 1
+    
+    # Create RF result object
+    rf_result = PredictionResult(
+        model_name="RandomForest",
+        prediction_class=prediction_code,
+        confidence=rf_confidence,
+        probabilities=[],
+        timestamp=datetime.now()
+    )
+    
+    # 3. Hybrid ensemble decision
+    final_risk, segment_color, ensemble_reason = hybrid_model.combine_predictions(
+        rf_result, lstm_result
+    )
+    
+    # Override with old logic if needed (backward compatibility)
+    if not lstm_service.is_available:
+        segment_color = classify_subscriber_status(live_data, prediction_code)
+        ensemble_reason = "LSTM unavailable, using RF only"
+    
+    status_text = "Normal" if segment_color == "GREEN" else "Risk/Arıza"
+    
+    # ===== LLM MESSAGE GENERATION =====
     llm_message = ""
     if segment_color in ["RED", "YELLOW"]:
-        status_text = "Risk/Arıza"
-        if not fault_details: fault_details = generate_fault_scenario("ping")
+        if not fault_details:
+            fault_details = generate_fault_scenario("ping")
         llm_message = llm_service.generate_proactive_message(
             name, plan, fault_details, gender, severity=segment_color
         )
     else:
         llm_message = "Hizmet değerleri ideal seviyede."
 
+    # ===== PROACTIVE SMS NOTIFICATION =====
+    # Durum değişikliklerini track et ve SMS gönder
+    conn_status = get_db_connection()
+    sms_info = {"sent": False, "message": None}
+    
+    if conn_status:
+        try:
+            tracker = StatusTracker(conn_status)
+            
+            # Arıza türünü belirle
+            fault_type = None
+            if segment_color == "YELLOW":
+                if live_data.get('latency', 0) > 80:
+                    fault_type = "yüksek_ping"
+                elif live_data.get('jitter', 0) > 30:
+                    fault_type = "bağlantı_dalgalanması"
+                else:
+                    fault_type = "risk_tespit_edildi"
+            elif segment_color == "RED":
+                if live_data.get('packet_loss', 0) > 5:
+                    fault_type = "paket_kaybı"
+                elif live_data.get('download_speed', 100) < 5:
+                    fault_type = "hız_düşüşü"
+                else:
+                    fault_type = "hat_arızası"
+            
+            # Durumu güncelle ve değişiklik var mı kontrol et
+            change = tracker.update_status(
+                subscriber_id,
+                segment_color,
+                fault_type=fault_type,
+                estimated_fix_hours=2 if segment_color == "YELLOW" else 4
+            )
+            
+            # Durum değişti ve SMS gönderilmeli mi?
+            if change["should_send_sms"]:
+                # Müşteri telefon numarasını al
+                cursor = conn_status.cursor()
+                cursor.execute(
+                    "SELECT phone_number, full_name FROM customers WHERE subscriber_id = %s",
+                    (subscriber_id,)
+                )
+                result = cursor.fetchone()
+                
+                if result:
+                    phone, cust_name = result
+                    
+                    # SMS mesajı oluştur
+                    if segment_color in ["YELLOW", "RED"]:
+                        # Arıza/Risk SMS'i - Gemini AI mesajını kullan
+                        sms_message = llm_message
+                    else:
+                        # Düzelme SMS'i (Profesyonel format: Sayın Ad Soyad)
+                        sms_message = f"Sayın {cust_name}, internet bağlantınız normale döndü. İyi kullanımlar! - NetPulse"
+                    
+                    # SMS gönder
+                    success = sms_sender.send_sms(phone, sms_message)
+                    
+                    if success:
+                        tracker.mark_sms_sent(subscriber_id)
+                        sms_info = {
+                            "sent": True,
+                            "message": sms_message,
+                            "transition": f"{change['old_status']} → {change['new_status']}",
+                            "phone": phone
+                        }
+                        logger.info(f"📱 SMS gönderildi: {subscriber_id} ({change['old_status']} → {change['new_status']})")
+            
+            conn_status.close()
+        
+        except Exception as e:
+            logger.error(f"Status tracking error: {e}")
+            if conn_status:
+                conn_status.close()
+
     return {
         "subscriber_id": subscriber_id,
         "customer_info": {"name": name, "plan": plan, "region": region, "gender": gender},
         "live_metrics": live_data,
         "ai_analysis": {
+            # Snapshot (Random Forest)
+            "snapshot": {
+                "model": "RandomForest",
+                "prediction": prediction_code,
+                "confidence": rf_confidence,
+                "status": "Normal" if prediction_code == 0 else "Anomaly"
+            },
+            # Trend (LSTM)
+            "trend": {
+                "model": "LSTM",
+                "available": lstm_result is not None,
+                "prediction": lstm_result.prediction_class if lstm_result else None,
+                "confidence": lstm_result.confidence if lstm_result else None,
+                "measurements_cached": len(lstm_service.measurement_cache.get(subscriber_id, [])) if lstm_service.is_available else 0
+            },
+            # Final Decision (Ensemble)
+            "final_decision": {
+                "risk_score": final_risk,
+                "segment": segment_color,
+                "reason": ensemble_reason,
+                "explanation": llm_message
+            },
+            # Legacy fields (backward compatibility)
             "status_code": prediction_code,
             "status_text": status_text,
-            "segment": segment_color,  # Frontend'e rengi gönderiyoruz
+            "segment": segment_color,
             "explanation": llm_message,
             "fault_details": fault_details
-        }
+        },
+        "sms_notification": sms_info  # SMS gönderimi bilgisi
     }
 
 # --- 2. ENDPOINT: TOPLU TARAMA (Dashboard İçin) ---
@@ -235,3 +396,58 @@ def scan_network_batch():
             })
             
     return results
+
+
+# --- 3. ENDPOINT: LSTM TREND ANALİZİ (YENİ!) ---
+@app.get("/api/trend/{subscriber_id}")
+def get_trend_analysis(subscriber_id: int):
+    """
+    LSTM-based trend analysis for proactive monitoring
+    Returns detailed risk forecast and trend direction
+    """
+    if not lstm_service.is_available:
+        raise HTTPException(
+            status_code=503, 
+            detail="LSTM service unavailable. Model not loaded."
+        )
+    
+    # Get trend analysis
+    trend = lstm_service.analyze_trend(subscriber_id)
+    
+    if not trend:
+        # Not enough data yet
+        cache_size = len(lstm_service.measurement_cache.get(subscriber_id, []))
+        raise HTTPException(
+            status_code=400,
+            detail=f"Not enough data for trend analysis. Have {cache_size}/12 measurements. Need 1 hour of data."
+        )
+    
+    # Get customer info
+    conn = get_db_connection()
+    customer_name = "Unknown"
+    if conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT full_name FROM customers WHERE subscriber_id = %s", (subscriber_id,))
+        result = cursor.fetchone()
+        if result:
+            customer_name = result[0]
+        conn.close()
+    
+    return {
+        "subscriber_id": subscriber_id,
+        "customer_name": customer_name,
+        "analysis": {
+            "current_risk": round(trend.current_risk, 3),
+            "trend_direction": trend.trend_direction,
+            "forecast_30min": round(trend.forecast_30min, 3),
+            "risk_chart": [round(r, 3) for r in trend.risk_chart],
+            "recommendation": trend.recommendation,
+            "severity": "HIGH" if trend.forecast_30min > 0.7 else ("MEDIUM" if trend.forecast_30min > 0.4 else "LOW")
+        },
+        "metadata": {
+            "measurements_count": len(trend.risk_chart),
+            "window_size": lstm_service.window_size,
+            "model_status": "active",
+            "model_name": "LSTM"
+        }
+    }
