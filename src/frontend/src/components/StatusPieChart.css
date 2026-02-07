@@ -7,25 +7,48 @@
     flex-direction: column;
     align-items: center;
     height: 100%;
-    min-height: 300px;
-    /* Reduced from 400px */
+    min-height: 380px;
 }
 
 .chart-header {
     margin-bottom: var(--space-sm);
     text-align: center;
+    flex-shrink: 0;
 }
 
+/* Matching RegionalMap header style */
 .chart-header h3 {
-    font-size: 1.1rem;
+    font-size: 1.4rem;
+    font-weight: 700;
     color: var(--text-primary);
     margin-bottom: 0;
+    background: linear-gradient(135deg, var(--purple-soft), var(--blue-medium));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    /* Gap between icon and text */
+}
+
+/* New Icon Style */
+.chart-icon {
+    font-size: 1.2rem;
+    /* Reset gradient for icon if needed, or keep it to inherit */
+    fill: var(--purple-soft);
+    /* Fallback color */
+}
+
+.chart-description {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-top: 4px;
 }
 
 .chart-container {
     width: 100%;
-    height: 220px;
-    /* Reduced from 300px */
+    height: 320px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -43,4 +66,70 @@
     margin: 0;
     font-weight: 600;
     color: var(--text-primary);
+}
+
+/* Custom Legend Styles */
+.custom-legend {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    /* Changed from center to flex-start for left alignment */
+    gap: 12px;
+    margin-top: var(--space-lg);
+    width: 100%;
+    max-width: 250px;
+    /* Limit width to keep it centered relative to card but valid for content */
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-light);
+}
+
+.legend-item-custom {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    width: 100%;
+    /* justify-content: center; REMOVED to allow left alignment */
+}
+
+.legend-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Container for text to handle alignment */
+.legend-text-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.legend-label {
+    /* Name on the left */
+}
+
+.legend-value-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.legend-count {
+    color: var(--text-primary);
+}
+
+.legend-percent {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-left: 2px;
+    font-weight: normal;
 }

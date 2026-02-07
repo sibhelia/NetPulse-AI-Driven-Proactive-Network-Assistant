@@ -1,0 +1,212 @@
+import React, { useState, useEffect } from 'react';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { useNavigate } from 'react-router-dom';
+import './RegionalMap.css'; // Reusing styles
+
+const InteractiveTurkeyMap = ({ subscribers }) => {
+    const navigate = useNavigate();
+    const [hoveredPin, setHoveredPin] = useState(null);
+
+    // Initial settings - Slightly zoomed in as requested
+    const initialScale = 1.15;
+    const initialX = 0;
+    const initialY = 0;
+
+    const handlePinClick = (id) => {
+        navigate(`/subscriber/${id}`);
+    };
+
+    // Corrected Coordinates for Istanbul (based on original 900x600 viewBox)
+    const getPinCoordinates = (index) => {
+        const baseX = 226;
+        const baseY = 185;
+
+        const angle = (index * 137.5) * (Math.PI / 180);
+        const r = 1.5 + Math.sqrt(index) * 1.5;
+
+        return {
+            x: baseX + Math.cos(angle) * r,
+            y: baseY + Math.sin(angle) * r
+        };
+    };
+
+    return (
+        <div className="interactive-map-wrapper" style={{ width: '100%', height: '100%', overflow: 'hidden', borderRadius: '12px', background: 'transparent' }}>
+            <TransformWrapper
+                initialScale={initialScale}
+                initialPositionX={initialX}
+                initialPositionY={initialY}
+                minScale={0.8} // Allow zooming out a bit more
+                maxScale={25}
+                centerOnInit={true}
+                wheel={{ step: 0.2 }}
+                panning={{ disabled: false, velocityDisabled: false }}
+            >
+                {({ zoomIn, zoomOut, resetTransform }) => (
+                    <>
+                        <div className="map-controls">
+                            <button onClick={() => zoomIn()}>+</button>
+                            <button onClick={() => zoomOut()}>-</button>
+                            <button onClick={() => resetTransform()}>⟲</button>
+                        </div>
+
+                        <TransformComponent
+                            wrapperStyle={{ width: '100%', height: '100%', background: 'transparent' }}
+                            contentStyle={{ width: '100%', height: '100%', background: 'transparent' }}
+                        >
+                            <svg
+                                viewBox="0 0 900 600" // Reverted to original full viewBox
+                                className="turkey-map-interactive"
+                                style={{ width: '100%', height: '100%', background: 'transparent' }}
+                            >
+                                <g id="Turkey_Map_Body">
+                                    <path
+                                        d="M870.6,359.5l-0.3-9l-2.1-1.5l1.9-5.2l-5-3.6l-2.4,1.1l-3.8-4.5l-3-1.2l-4.3,0.6l-0.6-1l0.3-3.5l5-11.2l0-0.1
+                                        l-0.2-6l3.5-4.9l-2.4-3.5l-5.9,0.5l-1.4-13.8l-2.6-1.8l0.1-10.9l-4.2-2.3l-2.9-5.3l1.4-2.6l-0.5-6.9l-5.4-2.5l-2.2-7.3l0.3-0.1
+                                        l-0.4-0.5l-0.1-0.3l-0.1,0.1l-1.2-1.3l1.4-1.4l5.8-1.3l3.3,1.3l4.6-1.9l1.6-2.3l-0.4-8.4l1.1-3.5l0.3,0.1l-0.1-0.7l0.1-0.4
+                                        l-0.2-0.1l-0.3-2.6l3.8-4.1l12.8,6.5l-3.6-6.1l-4.2-4l-5.6-3.7l-5.3-5.2l-6.8-2.9l-3.5-0.1l-9.6,3.3l-5.2-0.2l-11.1-3.6l-0.7-1.2
+                                        l2.8-2.1l-2.9-5.8l-4-4.1l0.9-4.5l-2.8-2.2l3.1-3.7l2.4-9.3l-1.5-6l-6-10.4l-6.6-2.7l-1.3-4.1l0,0l-0.6-3.5l-5.7-1.6l-3.7,1.6
+                                        l-2.9-3.7h-2l2.9-2.7l-9.1-4.5l-6.9-6.5l-1.5,1.9l-2.1-1.1l1.9-4.5l-7.8-0.1l-4.4,1.9l-0.5,3.6l-3.4,4.8l-12.7-2.6l-5.9,1.5
+                                        l-3.5-0.8l-5.2,5.3l-4.9-3.3l-3.4,0.8l-5-1.6l-3.4,4.3l-1.7,4.3l-4.2,1.9l-3.5,3.4l-3.2,1.2l-4.1,4.1l-5,2.4l-3.2-0.3l-5.2,6.5
+                                        l-5.6,3.6h-4.1l-4.3,3.4l-9.6,5.2l-5.7-3.1l-6.1,1.5l-5.8-2.5l-2.5,1.1l-3.2-1l-4.6-4.1l-3.1-0.4l-6.5,4l-5-0.7l0.1-0.6l-5.2,2.3
+                                        l-4.8,0.4l-6.3,2.8l-2.6,2.9l-3-1l-4.6,3.2l-8.8,1.1l-2-1.5l-8.2-0.3l0,0.1l-5.5-1.4l-3.6,0.7l-4.8-4.1l-0.2-3.8l-4.8-0.8l-4.4,6.3
+                                        l-2.9-0.2l-4.8-3.5l-6-2l-4.9,0.2l-4.4-1.7l-0.5-3.4l-2.4-3.1l-6.7-3.1L497,161l-2,4.8l-4.7,3.2l-4.2-2.4l-0.4-1.7l-4.5-2.2
+                                        l-4.5-5.6l-1-9.6l-3.5-4.4l-4.3-2l-2.7,1.8l-11.5,4.7l-5-0.3l-4.2-2.7l-4.5-1.3l-3.1-2.6l-5.7-10.2l1.9-4.5l-5.4-4.3l-3.7-0.3
+                                        l-2.6,5.5l-3.6,2.7l-4.2,1l-5.5-0.2l-3.4-1.3l-6.6,1.7l-5.5-0.7l0,0.1l-8.6-1.1l-5.6,0.5l-11-1.1l-3.2-0.8l-9.3-0.5l-6.8,3.6
+                                        L341,133l-3.4,2l-5.3,1.3l-8,1.2l-9.3,5.6l-5.9,1.3l-5.6,6.8l-4.2,1.4l-7.3,4l-9.1,6.1l-11.4,4.7l-0.2,6.8l-2.3,2.8l-4.8,3.2
+                                        l-11.7,0.3l-8.7-0.7l-2-1.7l-11.8-3.3l-7-2.6l-6.1,3.7l-11.2-0.9l0-0.2l-10.8-2.1l-16.7-4.2l-4.8,1.7l-0.6,0.6l0.7-2l-9.1-2.3
+                                        l-13-7l-9.1-4.7l-7.5-5.7l-4.5-6.1l0.3-1.8l-4.5-8.7l0.4-3.2h3.1l-1.1-5.7l-9.7-2l-0.9,2.7l-2.3-1.4l-5.2,0.5l-2.7,2.7l-4.8-4.2
+                                        l-6-7.6l-4.6,1.8l-6.6-1.4l-4,4.3l-3.8,0.9l0-0.3l-4.8,0.5l-4.9-0.8l-3.8,2.3l-1.4,5.7l-6.3-0.1l-2.2,1.7l-0.5,5.1l5.9,2.6
+                                        l-0.6,1.4l5.3,4.3l0.4-0.5l0.7,12.2l-1.8,2.2l-2.1-1.4l-6.9,5l-3,0.1l-1.3,8.1l1.1,8.9l-6,3.3l-0.8,3.1l-3.5,4.2l-4.9,1.7l1.5,8.1
+                                        l10.3,1.5l6.2-0.6l2.6,1.4l4.9-2.1l7.4-0.6l1.5,2.9l-3.9,1.7l-2.9,2.8l-3.2-0.2l-7.6,3.7l-5.2,4l-5.6,2.2l2.4,4.3l-0.6,3.3
+                                        l-5.7,8.6l4.5-0.4l7.2-5l-0.4,2.2l-3.8,4.6l-5.1,0.2l-2.4,3.9l-1.5,12l0.8,2.2l-0.9,4.3L35,256l-2.4,7.6l4,1.4l6.5-1.3l3,0.6l4.5-2
+                                        l8.7-0.9l0,0l0.1,0l1-0.1l0,0l9.6-1.2l1.4,0.5l-0.8,4.4l-5.8,2.8l0.5,2.1l-10.4,7.1l5.8,1.3l2,4.8l-0.2,0.1L63,284l0,0.1l0,0
+                                        l3.6,5.1l-3.3,1.8l-0.3,5.4l2.5,2.4l3.3-1.1l2.5,1.3l2.4-0.9l0.6,2.3l-7.7,3.5l1,3.4l-1.2,1.1l-2.9-1.3l-5.2,1.9l1.2,6.8l4,1.4
+                                        l-0.8,2.8l2.5,2.1l1.9,5.2l4.4-1.5l4.8,0.4l-2.2,2.2l-3.2-0.8l-4.2,1.8l-6.8,0.3l-1.7-4.3l-3.4,3.1l-0.1,2.3l-1.5-4l1.3-6.2
+                                        l-5.3-8.4l-4.4-2.1l-3.6,3.6l2,8.4L47,325l-2,0.1l1,3.8l-4.4,2.2l-2.5-1.4l-4.8,4.1l9.8,4.5l6.6,7.1l2.7-5.8l5.1-0.4l2.4,4.1
+                                        l1.5,6.8l4.3-1.5l4.9,1.8l2.2,3l5.4,0.7l0.5,4.8l-0.1,0l-1,8.5l-5.5,2.7l-6.6,1.4l9.7,5.1l-2,7.9l2.2-0.5l-0.7,6.4l1.9,1.6l4.3-0.7
+                                        l3.2-3l1,0.9l-2.4,4.2H88l-1.5,4.3l7.3-0.8l-0.5,3.3l-3.9,0.1l1.1,3.9l-3.2,1.7l-3.8-2.2l-3.3,0.1l-4.9,3.6l1.3,6.4l2.9,0.5
+                                        l1.1-3.3l4.6-0.4l5.5,3.5l7.5-1.5l2.7,0.8l5.1-1.6l10.2,0.1l8.9-0.5l0.4,0.4l-4.9,1.3l-1.4,3.4l-7.5,0.3l1.1,3.5l-2.5,0.6l2,2.9
+                                        l-2,0.3l-9-1.1l-1.9,1.4l-6.4-1.6l-0.7,2.2l-6.8,0.1l-5.5,4.5l5.2,2l4.3-1l5.7,2l0.9-4.3l2.2-1.6l8.3,1.7l5.9-1.1l2.1,1.9l-7.2,1.3
+                                        l5.9,3.4l-2,1.7l-4.1-0.2l2.1,3.7l6.3-2.4l2.5-3.8l6.4-4.2l-2.3-4.3l1.3-1.5l5.5,3.8l1.9-2.9l-1.9-1.4l1.9-0.9l0.6,3.5l6.5,0.4
+                                        l0.6,6.8l4-0.1l6.8,4.4l1.2-3.6l3.3-2.9l6.7,5l0.5,1.2l-3.2,0.4l-0.6,5.6l3.6-0.3l-0.9,3.6l1.3,3.8l-1.8,1.4l8.2,6.5l0.1-0.1
+                                        l4.4,3.7l2.6-1.8l3.5,3.3l4.8,0.4l3.3,5.2l2-2.2h1.9l-3.4,3.8l11.1-6.9h3.5l7.7-2l0.7-2.4l4-0.4l6.2,3.5l-0.2,3.7l7-9.4l-2-3.6
+                                        l2.1-4.8l2.4-2.2l-0.4-5.5l0.8-9.3l1.4-3.1l3.6-2.7l3.9,2.4l7.7-0.2l18.3,3.1l2.9,2.7l15.2,7.3l3.7,3.1l9.7,3l3.4,3.2l4.1,7.4
+                                        l3.9,4.1l0.2,2l3.9,4.5l6.9,4.5l2.5,0.5l4.6,2.8l6.5,1.3l6.5-4.5l6.9,1.3l2.2-3.1l11.5-0.3l3.3-1.2l4.5,1.8l4.2-3.6l1.9,3.1
+                                        l2.9-4.6l2.6-1.1l3.1-4.7l2.2,1.1l1.8,5.8l2.2-6.4l3.7-1.6l-0.1-5l4.4-3.3l4.6-6.7l6.4-4.5l6.3-6.1l6.1-2.8l3.3-0.1l6.8,4.5
+                                        l-0.3,0.2l1.1,0.4l0.1,0.1l0,0l4.7,1.6l14.5,8.6l7.4-4.2l1.4,1.3l4.6-1.4l1.6-7.2l-2.9,0.5l3.2-2.4l5.6-0.8l6-6.1l-0.1-0.3l1.9-2.1
+                                        l3-0.3l5.9,6.3l1.5,8.1l-1,2.8l-6.8,4.7l-5.3,4.8l-2.6,4.6l-3.5,3.4l0.7,2.5l7.2,11.1l1.3,3.6l-3.2,6.6l3.7-0.7l0.6,2.8l7.6,3.4
+                                        l2.6-8l3.4-0.5l0.3-2h3.8l-0.3-10.5l0.5-3l3.4,1.5l2.3-1.8l8.2-0.4l-1.8-5.9l-2.3-0.4l-2.6-9.3l1.3-2.1l0-5.1l1.3-7.3l2.2-4.5
+                                        l13.8,3.6l1.9,1.6l0.3,4.6l2.3,1.6l2.5-2.3l6.2-0.7l9.6,1l3.5-2.4l5.8-3.7l7.5-2l8.9-4.7l0,0.2l7.8-4.8h4.4l11,3.2l6.6,6.3l6.4,1.6
+                                        l10.8-1.5l7.3,1.9l2.7-0.2l24.1-6.4l9.6-4.6l12.3-7.7l0.3,0.1l7.7-5.8l4-1.2l8.1-5l8.3-2l14.2,2.1l0.1,0l12.9-1.7l19.3-6.6
+                                        l-0.1-0.2l6.6-3.1l6-7.6l0.6,1.6l3.3-0.1l2.8,2.8l-0.5,3.3l1.6,4l9.8-3.3l6-13.1l9.9,1.3l6.6-3.6l2-0.2l6.4,2.7l4.9-0.1l5.3,2.8
+                                        l6.7,0.2l6.8-0.8l2.1,1.5l4.1-2.1l3.8-5.5l4.1-0.5l6.2,2.6l1.3,5.1l-2.2,4.6l3.5,6.2h4.2l1.2-4.1l3.5-1.7l6.2-6.8l6.8-0.9l2.5,1.9
+                                        l-1.1-6.4l1.5-4L870.6,359.5z"
+                                        fill="#E0E0E0" // Light gray fill
+                                        stroke="#5c5c5c" // Darker border
+                                        strokeWidth="1"
+                                        className="turkey-land"
+                                    />
+
+                                    <polygon className="turkey-land" fill="#E0E0E0" stroke="#5c5c5c" points="376.9,466.2 376.7,466.5 377.5,467.1 377.9,466.6 377.1,465.9" />
+                                    <polygon className="turkey-land" fill="#E0E0E0" stroke="#5c5c5c" points="105.1,204.6 110.4,202.4 111.4,200.1 106.6,198.4 101.3,199.7 101.7,202.6" />
+                                    <polygon className="turkey-land" fill="#E0E0E0" stroke="#5c5c5c" points="32,222.8 32.6,219.1 29.6,217.6 22.4,219 17.1,223.9 22.3,226.4 35.4,224.1" />
+                                    <polygon className="turkey-land" fill="#E0E0E0" stroke="#5c5c5c" points="35.8,242 33.4,241.1 29.6,242.7 34.9,246" />
+
+                                    <circle cx="226" cy="185" r="35" fill="rgba(139, 127, 199, 0.15)" className="istanbul-pulse" />
+
+                                    {/* GREEN PINS */}
+                                    {subscribers.GREEN?.map((sub, idx) => {
+                                        const coords = getPinCoordinates(idx);
+                                        return (
+                                            <circle
+                                                key={`g-${sub.id}`}
+                                                cx={coords.x}
+                                                cy={coords.y}
+                                                r="0.8" // Large enough to see small enough not to blob
+                                                fill="#4CAF50"
+                                                stroke="white"
+                                                strokeWidth="0.2"
+                                                className="interactive-pin green"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handlePinClick(sub.id);
+                                                }}
+                                                onMouseEnter={() => setHoveredPin(sub)}
+                                                onMouseLeave={() => setHoveredPin(null)}
+                                            />
+                                        );
+                                    })}
+
+                                    {/* YELLOW PINS */}
+                                    {subscribers.YELLOW?.map((sub, idx) => {
+                                        const coords = getPinCoordinates(idx + 100);
+                                        return (
+                                            <circle
+                                                key={`y-${sub.id}`}
+                                                cx={coords.x}
+                                                cy={coords.y}
+                                                r="1.2"
+                                                fill="#FFC107"
+                                                stroke="white"
+                                                strokeWidth="0.3"
+                                                className="interactive-pin yellow"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handlePinClick(sub.id);
+                                                }}
+                                                onMouseEnter={() => setHoveredPin(sub)}
+                                                onMouseLeave={() => setHoveredPin(null)}
+                                            />
+                                        );
+                                    })}
+
+                                    {/* RED PINS */}
+                                    {subscribers.RED?.map((sub, idx) => {
+                                        const coords = getPinCoordinates(idx + 200);
+                                        return (
+                                            <g
+                                                key={`r-${sub.id}`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handlePinClick(sub.id);
+                                                }}
+                                                onMouseEnter={() => setHoveredPin(sub)}
+                                                onMouseLeave={() => setHoveredPin(null)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <circle
+                                                    cx={coords.x}
+                                                    cy={coords.y}
+                                                    r="1.5"
+                                                    fill="#F44336"
+                                                    stroke="white"
+                                                    strokeWidth="0.4"
+                                                    className="interactive-pin red"
+                                                />
+                                            </g>
+                                        );
+                                    })}
+
+                                </g>
+                            </svg>
+                        </TransformComponent>
+                    </>
+                )}
+            </TransformWrapper>
+
+            {hoveredPin && (
+                <div
+                    className="pin-tooltip"
+                    style={{ position: 'absolute', top: '10px', right: '10px', left: 'auto', transform: 'none' }}
+                >
+                    <h4>{hoveredPin.name}</h4>
+                    <p>📍 {hoveredPin.location || 'İstanbul'}</p>
+                    <div className="tooltip-action">Detay için tıkla</div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default InteractiveTurkeyMap;

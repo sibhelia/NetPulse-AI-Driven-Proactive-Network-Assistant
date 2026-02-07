@@ -10,7 +10,9 @@
 .dashboard-header h2 {
     font-size: 2rem;
     margin-bottom: var(--space-md);
-    color: var(--text-primary);
+    color: #2a244a;
+    /* Updated to match Footer text color */
+    font-weight: 800;
 }
 
 .stats-overview {
@@ -20,56 +22,108 @@
     gap: var(--space-md);
 }
 
+/* Base Stat Box Style */
 .stat-box {
     background: var(--bg-secondary);
     padding: var(--space-md);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
+    border-radius: 16px;
+    /* Rounder corners */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    /* Subtle base shadow */
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--space-xs);
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* Bouncy smooth transition */
     position: relative;
-    overflow: hidden;
+    border: 1px solid transparent;
+    /* Prepare for border transition */
+    z-index: 1;
 }
-
-.stat-box:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-md);
-}
-
-/* Color indicators */
-.stat-box.green {
-    border-bottom: 4px solid var(--green);
-}
-
-.stat-box.yellow {
-    border-bottom: 4px solid var(--yellow);
-}
-
-.stat-box.red {
-    border-bottom: 4px solid var(--red);
-}
-
-.stat-box.all {
-    border-bottom: 4px solid var(--blue-medium);
-}
-
-/* New "All" style */
 
 .stat-number {
     font-size: 2.5rem;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--text-primary);
+    transition: color 0.3s ease;
 }
 
 .stat-label {
     font-size: 1rem;
     color: var(--text-secondary);
-    font-weight: 500;
+    font-weight: 600;
+    transition: color 0.3s ease;
 }
+
+/* --- Color Specific Hover Effects --- */
+
+/* ALL (Blue) */
+.stat-box.all {
+    border-bottom: 4px solid var(--blue-medium);
+}
+
+.stat-box.all:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(91, 141, 238, 0.3);
+    background: linear-gradient(to bottom right, #ffffff, #f0f4ff);
+    border-color: rgba(91, 141, 238, 0.2);
+}
+
+.stat-box.all:hover .stat-number {
+    color: var(--blue-medium);
+}
+
+/* GREEN (Healthy) */
+.stat-box.green {
+    border-bottom: 4px solid var(--green);
+}
+
+.stat-box.green:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(76, 175, 80, 0.3);
+    background: linear-gradient(to bottom right, #ffffff, #f1f8e9);
+    border-color: rgba(76, 175, 80, 0.2);
+}
+
+.stat-box.green:hover .stat-number {
+    color: var(--green);
+}
+
+/* YELLOW (Risky) */
+.stat-box.yellow {
+    border-bottom: 4px solid var(--yellow);
+}
+
+.stat-box.yellow:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(255, 193, 7, 0.3);
+    background: linear-gradient(to bottom right, #ffffff, #fffde7);
+    border-color: rgba(255, 193, 7, 0.2);
+}
+
+.stat-box.yellow:hover .stat-number {
+    color: #fbc02d;
+    /* Slightly darker yellow for text readability */
+}
+
+/* RED (Faulty) */
+.stat-box.red {
+    border-bottom: 4px solid var(--red);
+}
+
+.stat-box.red:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(244, 67, 54, 0.3);
+    background: linear-gradient(to bottom right, #ffffff, #ffebee);
+    border-color: rgba(244, 67, 54, 0.2);
+}
+
+.stat-box.red:hover .stat-number {
+    color: var(--red);
+}
+
 
 /* Visualization Grid (Map + Chart) */
 .viz-grid {
@@ -78,6 +132,24 @@
     /* Equal width for Chart and Map */
     gap: var(--space-lg);
     margin-top: var(--space-lg);
+}
+
+/* Updated Viz Items to look like cards */
+.viz-item {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: var(--space-md);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    /* Soft initial shadow */
+    transition: all 0.4s ease;
+    border: 1px solid rgba(0, 0, 0, 0.02);
+}
+
+.viz-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(139, 127, 199, 0.15);
+    /* Purple glowing shadow on hover */
+    border-color: rgba(139, 127, 199, 0.1);
 }
 
 .loading,

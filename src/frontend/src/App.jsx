@@ -1,18 +1,81 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
 import SubscriberDetail from './pages/SubscriberDetail';
+import Login from './pages/Login';
+import Profile from './pages/Profile';
 
 function App() {
+    // Auth State - Initialize from LocalStorage to persist login
+    const [isAuthenticated, setIsAuthenticated] = useState(() => {
+        return localStorage.getItem('auth') === 'true';
+    });
+
+    const handleLogin = () => {
+        localStorage.setItem('auth', 'true');
+        setIsAuthenticated(true);
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('auth');
+        setIsAuthenticated(false);
+    };
+
+    // Protected Route Layout Wrapper
+    const ProtectedLayout = ({ children }) => {
+        if (!isAuthenticated) {
+            return <Navigate to="/login" replace />;
+        }
+        return (
+            <div className="app">
+                <Navbar onLogout={handleLogout} />
+                <main className="main-content">
+                    {children}
+                </main>
+            </div>
+        );
+    };
+
     return (
         <BrowserRouter>
-            <div className="app">
-                <Navbar />
-                <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/subscriber/:id" element={<SubscriberDetail />} />
-                </Routes>
-            </div>
+            <Routes>
+                {/* Public Route */}
+                {/* If already logged in, redirect Login page to Dashboard */}
+                <Route
+                    path="/login"
+                    element={isAuthenticated ? <Navigate to="/" replace /> : <Login onLogin={handleLogin} />}
+                />
+
+                {/* Protected Routes */}
+                <Route
+                    path="/"
+                    element={
+                        <ProtectedLayout>
+                            <Dashboard />
+                        </ProtectedLayout>
+                    }
+                />
+                <Route
+                    path="/subscriber/:id"
+                    element={
+                        <ProtectedLayout>
+                            <SubscriberDetail />
+                        </ProtectedLayout>
+                    }
+                />
+                <Route
+                    path="/profile"
+                    element={
+                        <ProtectedLayout>
+                            <Profile onLogout={handleLogout} />
+                        </ProtectedLayout>
+                    }
+                />
+
+                {/* Redirect any unknown route to login */}
+                <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
         </BrowserRouter>
     );
 }

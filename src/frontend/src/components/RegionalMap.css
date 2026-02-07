@@ -1,12 +1,10 @@
 .regional-map {
     width: 100%;
-    padding: var(--space-md);
-    /* Reduced from lg */
+    /* padding: var(--space-md); removed padding to maximize map area */
     background: white;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     height: 100%;
-    /* Match height of neighbor */
     display: flex;
     flex-direction: column;
 }
@@ -14,13 +12,11 @@
 .map-header {
     text-align: center;
     margin-bottom: var(--space-sm);
-    /* Reduced from lg */
     flex-shrink: 0;
 }
 
 .map-header h3 {
     font-size: 1.4rem;
-    /* Slightly smaller */
     font-weight: 700;
     color: var(--text-primary);
     margin-bottom: 0;
@@ -37,203 +33,155 @@
 
 .map-container {
     width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: var(--space-sm);
+    max-width: 100%;
+    /* Full width */
+    margin: 0;
+    padding: 0;
+    /* No padding */
     background: var(--navbar-gradient);
-    border-radius: var(--radius-md);
+    /* border-radius: var(--radius-md); removed for interactive map */
     flex-grow: 1;
-    /* Fill remaining space */
     display: flex;
     align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    /* Important for zoom */
 }
 
-.turkey-map {
+/* Interactive Map Styles */
+.interactive-map-wrapper {
     width: 100%;
-    height: auto;
-    max-height: 250px;
-    /* Limit height */
+    height: 100%;
+    position: relative;
+    background: #eef2f5;
+    /* Light sea color */
 }
 
-.turkey-border {
-    transition: all 0.3s ease;
+.map-controls {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 100;
 }
 
-.istanbul-highlight {
-    animation: pulse-highlight 3s ease-in-out infinite;
-}
-
-@keyframes pulse-highlight {
-
-    0%,
-    100% {
-        opacity: 0.6;
-    }
-
-    50% {
-        opacity: 1;
-    }
-}
-
-.region-name {
-    fill: var(--purple-soft);
-    font-size: 22px;
-    font-weight: 800;
-    text-anchor: middle;
-    letter-spacing: 2px;
-}
-
-.location-pin {
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.pin {
-    transition: r 0.2s ease;
-}
-
-.location-pin:hover .pin {
-    r: 10;
-}
-
-.green-pin {
-    animation: pulse-green 2s ease-in-out infinite;
-}
-
-.yellow-pin {
-    animation: pulse-yellow 2s ease-in-out infinite;
-}
-
-.red-pin {
-    animation: pulse-red 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse-green {
-
-    0%,
-    100% {
-        opacity: 0.7;
-    }
-
-    50% {
-        opacity: 1;
-    }
-}
-
-@keyframes pulse-yellow {
-
-    0%,
-    100% {
-        opacity: 0.8;
-    }
-
-    50% {
-        opacity: 1;
-    }
-}
-
-@keyframes pulse-red {
-
-    0%,
-    100% {
-        opacity: 0.9;
-    }
-
-    50% {
-        opacity: 1;
-        transform: scale(1.1);
-    }
-}
-
-.alert-icon {
-    font-size: 12px;
-    text-anchor: middle;
-    pointer-events: none;
-    animation: bounce 1s ease-in-out infinite;
-}
-
-@keyframes bounce {
-
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-3px);
-    }
-}
-
-.map-loading {
-    text-align: center;
-    padding: var(--space-xl);
-    font-size: 1.2rem;
-    color: var(--text-secondary);
-}
-
-.pin-tooltip {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+.map-controls button {
+    width: 30px;
+    height: 30px;
     background: white;
-    padding: var(--space-md);
-    border-radius: var(--radius-md);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-    border: 2px solid var(--purple-soft);
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+}
+
+.map-controls button:hover {
+    background: #f0f0f0;
+    transform: translateY(-1px);
+}
+
+.istanbul-pulse {
+    animation: pulse-region 3s infinite;
+    pointer-events: none;
+}
+
+@keyframes pulse-region {
+    0% {
+        r: 35;
+        opacity: 0.1;
+    }
+
+    50% {
+        r: 40;
+        opacity: 0.3;
+    }
+
+    100% {
+        r: 35;
+        opacity: 0.1;
+    }
+}
+
+.interactive-pin {
+    cursor: pointer;
+    transition: r 0.2s;
+}
+
+.interactive-pin:hover {
+    r: 6;
+    stroke-width: 1;
+    stroke: #333;
+}
+
+.interactive-pin.green {
+    fill: #4CAF50;
+}
+
+.interactive-pin.yellow {
+    fill: #FFC107;
+}
+
+.interactive-pin.red {
+    fill: #F44336;
+}
+
+/* Tooltip & Legend */
+.pin-tooltip {
+    position: absolute;
+    background: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #ddd;
     z-index: 1000;
-    min-width: 200px;
-    animation: fadeIn 0.2s ease;
+    min-width: 150px;
+    pointer-events: none;
 }
 
 .pin-tooltip h4 {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: var(--space-xs);
+    margin: 0 0 4px 0;
+    font-size: 1rem;
+    color: #333;
 }
 
 .pin-tooltip p {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    margin: var(--space-xs) 0;
-}
-
-.tooltip-action {
-    font-size: 0.8rem;
-    color: var(--blue-medium);
-    font-weight: 600;
-    margin-top: 8px;
+    margin: 0;
+    font-size: 0.85rem;
+    color: #666;
 }
 
 .map-legend {
     display: flex;
     justify-content: center;
     gap: var(--space-lg);
-    margin-top: var(--space-md);
-    /* Reduced from lg */
-    padding: var(--space-sm);
-    /* Reduced from md */
+    padding: 8px;
     background: white;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
+    border-top: 1px solid #eee;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: var(--text-primary);
 }
 
 .legend-pin {
-    width: 16px;
-    height: 16px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: var(--shadow-sm);
+    display: inline-block;
 }
 
 .legend-pin.green {
@@ -248,25 +196,10 @@
     background: #F44336;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(0.9);
-    }
-
-    to {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-    }
-}
-
 @media (max-width: 768px) {
     .map-legend {
         flex-direction: column;
         align-items: center;
-    }
-
-    .region-name {
-        font-size: 16px;
+        gap: 4px;
     }
 }

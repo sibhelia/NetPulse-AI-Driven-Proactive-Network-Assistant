@@ -11,9 +11,10 @@
     "dependencies": {
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
+        "react-icons": "^4.12.0",
         "react-router-dom": "^6.20.0",
-        "recharts": "^2.10.0",
-        "react-icons": "^4.12.0"
+        "react-zoom-pan-pinch": "^3.7.0",
+        "recharts": "^2.10.0"
     },
     "devDependencies": {
         "@types/react": "^18.2.43",
