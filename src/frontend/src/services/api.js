@@ -41,5 +41,28 @@ export const api = {
             console.error(`Error fetching trend for ${subscriberId}:`, error);
             throw error;
         }
+    },
+
+    // --- NEW METHODS (Action & Ticketing) ---
+    getTechnicians: async () => {
+        const res = await fetch(`${API_BASE}/api/technicians`);
+        return await res.json();
+    },
+
+    createTicket: async (ticketData) => {
+        const res = await fetch(`${API_BASE}/api/tickets`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(ticketData)
+        });
+        if (!res.ok) throw new Error('Ticket creation failed');
+        return await res.json();
+    },
+
+    performAction: async (actionType, subscriberId) => {
+        const res = await fetch(`${API_BASE}/api/actions/${actionType}?subscriber_id=${subscriberId}`, {
+            method: 'POST'
+        });
+        return await res.json();
     }
 };

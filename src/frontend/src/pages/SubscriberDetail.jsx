@@ -1,224 +1,276 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { FaArrowLeft, FaPhone, FaMapMarkerAlt, FaServer, FaHistory, FaTools, FaRedo, FaNetworkWired, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
+import TicketModal from '../components/TicketModal';
+import { FaArrowLeft, FaServer, FaNetworkWired, FaMapMarkerAlt, FaHistory, FaTools, FaBolt, FaRedo, FaExclamationTriangle } from 'react-icons/fa';
 import './SubscriberDetail.css';
 
-export default function SubscriberDetail() {
+// Recharts for micro-charts
+import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
+
+const SubscriberDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+
+    const [subscriber, setSubscriber] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [data, setData] = useState(null);
-    const [trendData, setTrendData] = useState(null);
+    const [error, setError] = useState(null);
+    const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+    const [actionLoading, setActionLoading] = useState(null);
 
-    useEffect(() => {
-        loadData();
-    }, [id]);
+    // Mock data for sparklines (since we only have instantaneous values usually)
+    const [sparkData, setSparkData] = useState([]);
 
-    const loadData = async () => {
+    const fetchSubscriber = async () => {
         try {
-            const [detail, trend] = await Promise.all([
-                api.getSubscriberDetail(id),
-                api.getTrendAnalysis(id).catch(() => null)
-            ]);
-            setData(detail);
-            setTrendData(trend);
+            const data = await api.getSubscriberDetail(id);
+            setSubscriber(data);
+
+            // Generate mock sparkline data based on current value mostly
+            const currentLatency = data.live_metrics.latency;
+            const history = Array.from({ length: 10 }).map((_, i) => ({
+                value: currentLatency + (Math.random() * 10 - 5)
+            }));
+            setSparkData(history);
+
         } catch (err) {
-            console.error(err);
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     };
 
-    if (loading) return <div className="loading">Yükleniyor...</div>;
-    if (!data) return <div className="error">Abone bulunamadı</div>;
+    useEffect(() => {
+        fetchSubscriber();
+        // Poll every 5 seconds for live updates
+        const interval = setInterval(fetchSubscriber, 5000);
+        return () => clearInterval(interval);
+    }, [id]);
 
-    const { customer_info, live_metrics, ai_analysis, sms_notification } = data;
+    const handleAction = async (actionType) => {
+        setActionLoading(actionType);
+        try {
+            await api.performAction(actionType, id);
+            // Show simple alert or toast (using native alert for simplicity here)
+            alert(`${actionType === 'reset' ? 'Hat sıfırlama' : 'Ping testi'} işlemi başarıyla tamamlandı.`);
+            fetchSubscriber(); // Refresh data
+        } catch (err) {
+            alert("İşlem başarısız: " + err.message);
+        } finally {
+            setActionLoading(null);
+        }
+    };
 
-    // Mock History Data
-    const historyData = [
-        { id: 1, date: '08.02.2026 14:30', event: 'Sinyal Kopması', status: 'Otomatik Düzeltildi' },
-        { id: 2, date: '07.02.2026 09:15', event: 'Yüksek Gecikme', status: 'İncelendi' },
-        { id: 3, date: '05.02.2026 18:45', event: 'Modem Reset', status: 'Başarılı' },
-    ];
+    if (loading) return <div className="loading-screen">Yükleniyor...</div>;
+    if (error) return <div className="error-screen">Hata: {error}</div>;
+    if (!subscriber) return <div>Abone bulunamadı.</div>;
+
+    const { customer_info, live_metrics, ai_analysis, history } = subscriber;
 
     return (
         <div className="detail-page-wrapper">
-            <div className="detail-container">
-                {/* Header */}
-                <header className="detail-header">
-                    <div className="header-left">
-                        <button className="back-btn" onClick={() => navigate(-1)} title="Geri Dön">
-                            <FaArrowLeft />
-                        </button>
-                        <div className="header-title">
-                            <h1>{customer_info.name}</h1>
-                            <span className="sub-id">#{id}</span>
-                        </div>
+            {/* Header */}
+            <div className="detail-header">
+                <div className="header-left">
+                    <button onClick={() => navigate('/subscribers')} className="back-btn">
+                        <FaArrowLeft />
+                    </button>
+                    <div className="subscriber-title">
+                        <h1>{customer_info.name}</h1>
+                        <span className="sub-id">#{subscriber.subscriber_id} - {customer_info.plan}</span>
                     </div>
-                    <div className="header-right">
-                        <span className={`global-status ${ai_analysis.segment.toLowerCase()}`}>
-                            {ai_analysis.segment === 'GREEN' ? 'SAĞLIKLI' :
-                                ai_analysis.segment === 'YELLOW' ? 'RİSKLİ' : 'ARIZALI'}
-                        </span>
-                    </div>
-                </header>
-
-                {/* 3-Column Dashboard Grid */}
-                <div className="dashboard-grid">
-
-                    {/* LEFT COLUMN: PROFILE & DEVICE */}
-                    <div className="grid-col left-col">
-                        {/* Profile Card */}
-                        <div className="card profile-card">
-                            <div className="card-header">
-                                <h3>👤 Abone Profili</h3>
-                            </div>
-                            <div className="profile-content">
-                                <div className="avatar-large">{customer_info.name.charAt(0)}</div>
-                                <div className="profile-details">
-                                    <div className="detail-row">
-                                        <FaPhone className="icon" /> <span>{customer_info.phone}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <FaMapMarkerAlt className="icon" /> <span>{customer_info.region}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <FaServer className="icon" /> <span>{customer_info.plan}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Device Info */}
-                        <div className="card device-card">
-                            <div className="card-header">
-                                <h3>📟 Cihaz Bilgisi</h3>
-                            </div>
-                            <div className="device-info">
-                                <div className="info-item">
-                                    <span className="label">Model:</span>
-                                    <span className="value">Huawei HG255s</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="label">Uptime:</span>
-                                    <span className="value">14g 5s 32dk</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="label">IP:</span>
-                                    <span className="value">192.168.1.105</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* MIDDLE COLUMN: NETWORK STATUS & AI */}
-                    <div className="grid-col mid-col">
-                        {/* Live Metrics Grid */}
-                        <div className="metrics-row">
-                            <div className="metric-box">
-                                <span className="metric-label">Hız</span>
-                                <span className="metric-value">{live_metrics.download_speed?.toFixed(1)} <small>Mbps</small></span>
-                                <div className="mini-chart speed"></div>
-                            </div>
-                            <div className="metric-box">
-                                <span className="metric-label">Ping</span>
-                                <span className="metric-value">{live_metrics.latency?.toFixed(1)} <small>ms</small></span>
-                                <div className="mini-chart latency"></div>
-                            </div>
-                            <div className="metric-box">
-                                <span className="metric-label">Jitter</span>
-                                <span className="metric-value">{live_metrics.jitter?.toFixed(1)} <small>ms</small></span>
-                            </div>
-                            <div className="metric-box">
-                                <span className="metric-label">Loss</span>
-                                <span className="metric-value">{live_metrics.packet_loss?.toFixed(1)} <small>%</small></span>
-                            </div>
-                        </div>
-
-                        {/* AI Analysis & Trend */}
-                        <div className="card chart-card">
-                            <div className="card-header">
-                                <h3>📊 AI Risk Analizi & Trend</h3>
-                            </div>
-                            <div className="chart-content">
-                                <div className="ai-summary">
-                                    <div className="ai-badge">
-                                        <strong>RF Model:</strong> {ai_analysis.snapshot.status}
-                                    </div>
-                                    <div className="ai-badge">
-                                        <strong>Tahmin:</strong> {(ai_analysis.snapshot.confidence * 100).toFixed(0)}% Güven
-                                    </div>
-                                </div>
-
-                                {trendData && trendData.analysis ? (
-                                    <ResponsiveContainer width="100%" height={200}>
-                                        <AreaChart data={trendData.analysis.risk_chart.map((risk, i) => ({ time: i, risk }))}>
-                                            <defs>
-                                                <linearGradient id="colorRisk" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#8B7FC7" stopOpacity={0.8} />
-                                                    <stop offset="95%" stopColor="#8B7FC7" stopOpacity={0} />
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                            <XAxis dataKey="time" hide />
-                                            <YAxis hide domain={[0, 100]} />
-                                            <Tooltip />
-                                            <Area type="monotone" dataKey="risk" stroke="#8B7FC7" strokeWidth={2} fill="url(#colorRisk)" />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="no-data">Trend verisi hazırlanıyor...</div>
-                                )}
-                                <div className="ai-reason">
-                                    <FaExclamationTriangle className="warning-icon" />
-                                    <p>{ai_analysis.final_decision.reason}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* RIGHT COLUMN: ACTIONS & HISTORY */}
-                    <div className="grid-col right-col">
-                        {/* Actions */}
-                        <div className="card actions-card">
-                            <div className="card-header">
-                                <h3>⚡ Hızlı İşlemler</h3>
-                            </div>
-                            <div className="action-buttons">
-                                <button className="action-btn primary">
-                                    <FaRedo /> Hattı Sıfırla
-                                </button>
-                                <button className="action-btn secondary">
-                                    <FaNetworkWired /> Ping Testi
-                                </button>
-                                <button className="action-btn danger">
-                                    <FaTools /> Arıza Kaydı Aç
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* History */}
-                        <div className="card history-card">
-                            <div className="card-header">
-                                <h3><FaHistory /> Son Olaylar</h3>
-                            </div>
-                            <div className="history-list">
-                                {historyData.map((item) => (
-                                    <div key={item.id} className="history-item">
-                                        <div className="history-date">{item.date}</div>
-                                        <div className="history-event">{item.event}</div>
-                                        <span className="history-status">{item.status}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
+                </div>
+                <div className="header-right">
+                    <StatusBadge status={ai_analysis.segment} />
                 </div>
             </div>
+
+            <div className="dashboard-grid">
+
+                {/* 1. LEFT COLUMN: PROFILE & DEVICE */}
+                <div className="left-column">
+                    <div className="dashboard-card">
+                        <div className="card-header">
+                            <h3><FaNetworkWired /> Abonelik Bilgileri</h3>
+                        </div>
+                        <div className="profile-info-row">
+                            <span className="info-label">Telefon:</span>
+                            <span className="info-value">{customer_info.phone}</span>
+                        </div>
+                        <div className="profile-info-row">
+                            <span className="info-label">Paket:</span>
+                            <span className="info-value">{customer_info.plan}</span>
+                        </div>
+                        <div className="profile-info-row">
+                            <span className="info-label">Bölge:</span>
+                            <span className="info-value">{customer_info.region}</span>
+                        </div>
+                    </div>
+
+                    <div className="dashboard-card device-card">
+                        <div className="card-header">
+                            <h3><FaServer /> Cihaz Durumu</h3>
+                        </div>
+                        <div className="device-status">
+                            <div className="status-item">
+                                <span className="info-label">Modem:</span>
+                                <span className="info-value">{customer_info.modem}</span>
+                            </div>
+                            <div className="status-item">
+                                <span className="info-label">IP Adresi:</span>
+                                <span className="info-value">{customer_info.ip}</span>
+                            </div>
+                            <div className="status-item">
+                                <span className="info-label">Uptime:</span>
+                                <span className="info-value">{customer_info.uptime}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="dashboard-card location-card">
+                        <div className="card-header">
+                            <h3><FaMapMarkerAlt /> Konum</h3>
+                        </div>
+                        <div style={{ background: '#e2e8f0', height: '150px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                            HARİTA ({customer_info.region})
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. MIDDLE COLUMN: LIVE METRICS & ANALYSIS */}
+                <div className="middle-column">
+                    <div className="dashboard-card">
+                        <div className="card-header">
+                            <h3><FaBolt /> Canlı Ağ Performansı</h3>
+                        </div>
+                        <div className="metrics-grid">
+                            <div className="metric-box">
+                                <h4>Download Hızı</h4>
+                                <div className="metric-value">
+                                    {live_metrics.download_speed.toFixed(1)} <span className="metric-unit">Mbps</span>
+                                </div>
+                            </div>
+                            <div className="metric-box">
+                                <h4>Gecikme (Ping)</h4>
+                                <div className="metric-value">
+                                    {live_metrics.latency.toFixed(0)} <span className="metric-unit">ms</span>
+                                </div>
+                                <div style={{ height: 30 }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={sparkData}>
+                                            <Line type="monotone" dataKey="value" stroke="#8884d8" strokeWidth={2} dot={false} />
+                                            <YAxis hide domain={['dataMin', 'dataMax']} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                            <div className="metric-box">
+                                <h4>Jitter</h4>
+                                <div className="metric-value">
+                                    {live_metrics.jitter.toFixed(1)} <span className="metric-unit">ms</span>
+                                </div>
+                            </div>
+                            <div className="metric-box">
+                                <h4>Packet Loss</h4>
+                                <div className="metric-value" style={{ color: live_metrics.packet_loss > 0 ? '#dc2626' : '#16a34a' }}>
+                                    %{live_metrics.packet_loss.toFixed(1)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="dashboard-card ai-analysis-card">
+                        <div className="card-header">
+                            <h3><FaExclamationTriangle /> NetPulse AI Analizi</h3>
+                        </div>
+                        <div className="analysis-content">
+                            <div className="analysis-text">
+                                <p className="analysis-story">
+                                    {ai_analysis.story || ai_analysis.explanation}
+                                </p>
+                                <div className="analysis-meta">
+                                    <div className="meta-item">
+                                        <strong>Tahmini Çözüm:</strong> {ai_analysis.estimated_fix || 'Belirsiz'}
+                                    </div>
+                                    <div className="meta-item">
+                                        <strong>Risk Skoru:</strong> {(ai_analysis.risk_score * 100).toFixed(0)}/100
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. RIGHT COLUMN: ACTIONS & HISTORY */}
+                <div className="right-column">
+                    <div className="dashboard-card">
+                        <div className="card-header">
+                            <h3><FaTools /> Hızlı İşlemler</h3>
+                        </div>
+                        <div className="action-buttons">
+                            <button
+                                className="action-btn reset"
+                                onClick={() => handleAction('reset')}
+                                disabled={actionLoading}
+                            >
+                                <FaRedo className={actionLoading === 'reset' ? 'fa-spin' : ''} />
+                                {actionLoading === 'reset' ? 'Sıfırlanıyor...' : 'Hattı Sıfırla (Port Reset)'}
+                            </button>
+                            <button
+                                className="action-btn ping"
+                                onClick={() => handleAction('ping')}
+                                disabled={actionLoading}
+                            >
+                                <FaNetworkWired className={actionLoading === 'ping' ? 'fa-spin' : ''} />
+                                {actionLoading === 'ping' ? 'Test Ediliyor...' : 'Ping Testi Başlat'}
+                            </button>
+                            <button className="action-btn ticket" onClick={() => setIsTicketModalOpen(true)}>
+                                <FaTools /> Arıza Kaydı Aç
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="dashboard-card">
+                        <div className="card-header">
+                            <h3><FaHistory /> İşlem Geçmişi / Loglar</h3>
+                        </div>
+                        <ul className="history-list">
+                            {history && history.length > 0 ? history.map((item, index) => (
+                                <li key={index} className="history-item">
+                                    <div className="history-header">
+                                        <span className="history-date">{item.date}</span>
+                                        <span className={`status-tag ${item.status.toLowerCase()}`}>{item.status}</span>
+                                    </div>
+                                    <span className="history-event">{item.event}</span>
+                                    <div className="history-meta">
+                                        <span>Teknisyen:</span>
+                                        <span className="tech-name">{item.tech || 'Sistem'}</span>
+                                    </div>
+                                </li>
+                            )) : (
+                                <li className="history-item" style={{ textAlign: 'center', color: '#94a3b8' }}>
+                                    Kayıt bulunamadı.
+                                </li>
+                            )}
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+
+            {/* Ticket Modal */}
+            <TicketModal
+                isOpen={isTicketModalOpen}
+                onClose={() => setIsTicketModalOpen(false)}
+                subscriberId={subscriber.subscriber_id}
+                onSuccess={() => {
+                    fetchSubscriber();
+                    alert("Arıza kaydı başarıyla oluşturuldu ve ekibe iletildi.");
+                }}
+            />
         </div>
     );
-}
+};
+
+export default SubscriberDetail;

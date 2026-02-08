@@ -21,6 +21,18 @@ DISTRICTS = [
     "Bakırköy/Ataköy", "Bakırköy/Yeşilköy", "Bakırköy/Florya"
 ]
 
+MODEM_MODELS = [
+    "Huawei HG255s", "ZTE H298A", "TP-Link Archer C5v", "Keenetic Omni DSL", "Asus DSL-AC51"
+]
+
+TECHNICIANS = [
+    ("Ahmet Yılmaz", "Fiber Uzmanı", "Active"),
+    ("Mehmet Demir", "Saha Operasyonu", "Active"),
+    ("Ayşe Kaya", "Ağ Mühendisi", "Busy"),
+    ("Canan Yıldız", "Müşteri Destek", "Active"),
+    ("Burak Çelik", "Kablo Teknisyeni", "Offline")
+]
+
 def generate_tr_phone():
     """Gerçekçi Türk telefon numarası üret"""
     prefixes = ['530', '531', '532', '533', '535', '536', '541', '542', '543', '544', '545', '555', '505', '506']
@@ -32,6 +44,15 @@ def generate_tr_phone():
     
     return f"+90 {prefix} {part1} {part2} {part3}"
 
+def generate_ip():
+    return f"192.168.1.{random.randint(2, 254)}"
+
+def generate_uptime():
+    days = random.randint(0, 30)
+    hours = random.randint(0, 23)
+    minutes = random.randint(0, 59)
+    return f"{days}g {hours}s {minutes}dk"
+
 def create_database():
     print("PostgreSQL'e bağlanılıyor...")
     try:
@@ -41,11 +62,13 @@ def create_database():
         conn.autocommit = True
         cursor = conn.cursor()
 
-        # Eski tabloları sil
+        # Eski tabloları sil (Sırası önemli, referanslar yüzünden)
+        cursor.execute("DROP TABLE IF EXISTS tickets;")
+        cursor.execute("DROP TABLE IF EXISTS technicians;")
         cursor.execute("DROP TABLE IF EXISTS subscriber_status;")
         cursor.execute("DROP TABLE IF EXISTS customers;")
         
-        # Customers tablosu
+        # 1. Customers tablosu (Gelişmiş)
         create_customers_table = """
         CREATE TABLE customers (
             subscriber_id INTEGER PRIMARY KEY,
@@ -55,13 +78,16 @@ def create_database():
             subscription_plan VARCHAR(50),
             region_id VARCHAR(50),
             telegram_chat_id VARCHAR(50),
-            is_vip BOOLEAN DEFAULT FALSE
+            is_vip BOOLEAN DEFAULT FALSE,
+            modem_model VARCHAR(50),
+            ip_address VARCHAR(20),
+            uptime VARCHAR(20)
         );
         """
         cursor.execute(create_customers_table)
         print("✅ 'customers' tablosu oluşturuldu")
         
-        # Subscriber Status tablosu (YENİ!)
+        # 2. Subscriber Status tablosu
         create_status_table = """
         CREATE TABLE subscriber_status (
             subscriber_id INTEGER PRIMARY KEY REFERENCES customers(subscriber_id),
@@ -78,6 +104,40 @@ def create_database():
         cursor.execute(create_status_table)
         print("✅ 'subscriber_status' tablosu oluşturuldu")
 
+        # 3. Technicians Table
+        create_tech_table = """
+        CREATE TABLE technicians (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100),
+            expertise VARCHAR(100),
+            status VARCHAR(20) DEFAULT 'Active'
+        );
+        """
+        cursor.execute(create_tech_table)
+        print("✅ 'technicians' tablosu oluşturuldu")
+
+        # 4. Tickets Table (Arıza Kayıtları)
+        create_tickets_table = """
+        CREATE TABLE tickets (
+            ticket_id SERIAL PRIMARY KEY,
+            subscriber_id INTEGER REFERENCES customers(subscriber_id),
+            technician_id INTEGER REFERENCES technicians(id),
+            issue_type VARCHAR(50),
+            status VARCHAR(20) DEFAULT 'Open', -- Open, In Progress, Resolved
+            created_at TIMESTAMP DEFAULT NOW(),
+            notes TEXT
+        );
+        """
+        cursor.execute(create_tickets_table)
+        print("✅ 'tickets' tablosu oluşturuldu")
+
+        # --- DATA GENERATION ---
+
+        # Technicians
+        insert_tech = "INSERT INTO technicians (name, expertise, status) VALUES (%s, %s, %s)"
+        cursor.executemany(insert_tech, TECHNICIANS)
+        print(f"✅ {len(TECHNICIANS)} teknisyen eklendi.")
+
         print("500 Müşteri verisi üretiliyor...")
         customers_data = []
         
@@ -88,9 +148,12 @@ def create_database():
             "Kadın", 
             "+90 536 625 16 52", 
             "1000 Mbps Fiber Platin", 
-            "Kadıköy/Moda",  # Gerçek mahalle
+            "Kadıköy/Moda", 
             "", 
-            True
+            True,
+            "Huawei HG255s",
+            "192.168.1.100",
+            "14g 5s"
         )
         customers_data.append(sibel_profile)
         
@@ -98,23 +161,22 @@ def create_database():
         
         for i in range(1, TOTAL_SUBSCRIBERS):
             sub_id = 1001 + i
-            region = random.choice(DISTRICTS)  # Gerçek mahalle isimleri
+            region = random.choice(DISTRICTS)
             plan = random.choice(plans)
             is_vip = "Gamer" in plan or "Platin" in plan
             phone = generate_tr_phone()
+            modem = random.choice(MODEM_MODELS)
+            ip = generate_ip()
+            uptime = generate_uptime()
             
-            # Cinsiyet ve ona uygun isim seçimi
             gender_choice = random.choice(["Kadın", "Erkek"])
-            if gender_choice == "Kadın":
-                name = fake.name_female()
-            else:
-                name = fake.name_male()
+            name = fake.name_female() if gender_choice == "Kadın" else fake.name_male()
             
-            customers_data.append((sub_id, name, gender_choice, phone, plan, region, "", is_vip))
+            customers_data.append((sub_id, name, gender_choice, phone, plan, region, "", is_vip, modem, ip, uptime))
             
         insert_sql = """
-        INSERT INTO customers (subscriber_id, full_name, gender, phone_number, subscription_plan, region_id, telegram_chat_id, is_vip)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO customers (subscriber_id, full_name, gender, phone_number, subscription_plan, region_id, telegram_chat_id, is_vip, modem_model, ip_address, uptime)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor.executemany(insert_sql, customers_data)
         
@@ -126,9 +188,16 @@ def create_database():
                 "INSERT INTO subscriber_status (subscriber_id, current_status) VALUES (%s, 'GREEN')",
                 (sub_id,)
             )
+
+            # Rastgele eski ticketlar oluştur (History dolu görünsün)
+            if random.random() < 0.1: # %10 şansla eski kaydı olsun
+                tech_id = random.randint(1, len(TECHNICIANS))
+                cursor.execute("""
+                    INSERT INTO tickets (subscriber_id, technician_id, issue_type, status, created_at, notes)
+                    VALUES (%s, %s, 'Connection Lost', 'Resolved', NOW() - INTERVAL '3 days', 'Modem resetlendi, sorun çözüldü.')
+                """, (sub_id, tech_id))
         
-        print(f"✅ İŞLEM TAMAM! {len(customers_data)} müşteri + {len(customers_data)} status kaydedildi.")
-        print(f"✅ Sibel Akkurt profili: {sibel_profile[3]}")
+        print(f"✅ İŞLEM TAMAM! {len(customers_data)} müşteri kaydedildi.")
         conn.close()
 
     except Exception as e:
