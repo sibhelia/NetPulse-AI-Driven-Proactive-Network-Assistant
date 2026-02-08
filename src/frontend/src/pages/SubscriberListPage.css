@@ -1,0 +1,218 @@
+.list-page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 120px);
+    background: #f8f9fa;
+}
+
+.list-page-content {
+    flex: 1;
+    padding: 2rem 3rem;
+    width: 100%;
+}
+
+.list-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.list-header h2 {
+    font-size: 2.2rem;
+    color: #2a244a;
+    font-weight: 800;
+    margin: 0;
+}
+
+.back-btn {
+    background: linear-gradient(135deg, #F0EDFF 0%, #E8F4FF 100%);
+    border: 1px solid #d1c4e9;
+    color: #2a244a;
+    font-size: 1.2rem;
+    padding: 0.8rem;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    width: 45px;
+    height: 45px;
+}
+
+.back-btn:hover {
+    background: linear-gradient(135deg, #E8F4FF 0%, #F0EDFF 100%);
+    transform: translateX(-3px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.table-container {
+    background: white;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    width: 100%;
+}
+
+.subscriber-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.subscriber-table th {
+    background: #4a407a;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 1.2rem 2rem;
+    text-align: left;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+}
+
+.subscriber-table td {
+    padding: 1.2rem 2rem;
+    border-bottom: 1px solid #f0f0f0;
+    color: #2a244a;
+    font-size: 0.95rem;
+    font-weight: 500;
+    vertical-align: middle;
+}
+
+.subscriber-table tr:hover {
+    background-color: #f8f9fe;
+}
+
+/* User Cell & Avatar */
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar-placeholder {
+    width: 32px;
+    height: 32px;
+    background: #E8F4FF;
+    color: #4a407a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+/* Plan Badge */
+.plan-badge {
+    background: #f3e5f5;
+    color: #7b1fa2;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: inline-block;
+}
+
+.status-badge.green {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.status-badge.yellow {
+    background: #fff9c4;
+    color: #f9a825;
+    border: 1px solid #fff59d;
+}
+
+.status-badge.red {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.status-badge.unknown {
+    background: #f5f5f5;
+    color: #757575;
+}
+
+.detail-btn {
+    background: #4a407a;
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    box-shadow: 0 3px 6px rgba(74, 64, 122, 0.2);
+}
+
+.detail-btn:hover {
+    background: #5e548e;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 12px rgba(74, 64, 122, 0.3);
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    border-top: 1px solid #f0f0f0;
+    width: 100%;
+}
+
+.pagination-btn {
+    background: #f0f0f0;
+    color: #2a244a;
+    border: none;
+    padding: 0.8rem;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #e0e0e0;
+    color: #4a407a;
+    transform: scale(1.1);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: #f9f9f9;
+}
+
+.page-info {
+    color: #2a244a;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: 'Roboto Mono', monospace;
+    background: #f8f9fa;
+    padding: 4px 12px;
+    border-radius: 8px;
+}

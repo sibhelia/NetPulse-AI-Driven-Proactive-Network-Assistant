@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import SubscriberListModal from '../components/SubscriberListModal';
+import { useNavigate } from 'react-router-dom';
 import InteractiveTurkeyMap from '../components/InteractiveTurkeyMap';
 import StatusPieChart from '../components/StatusPieChart';
 import Footer from '../components/Footer';
@@ -10,10 +10,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
-
-    // Modal State
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalFilter, setModalFilter] = useState('ALL');
+    const navigate = useNavigate();
 
     useEffect(() => {
         loadData();
@@ -34,8 +31,8 @@ export default function Dashboard() {
     };
 
     const handleStatClick = (filter) => {
-        setModalFilter(filter);
-        setIsModalOpen(true);
+        // Navigate to the reusable list page with filter
+        navigate(`/list/${filter.toLowerCase()}`);
     };
 
     if (loading) return <div className="loading">Yükleniyor...</div>;
@@ -47,7 +44,7 @@ export default function Dashboard() {
     return (
         <div className="dashboard-page-wrapper" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
             {/* Main Content Area */}
-            <div className="dashboard" style={{ flex: '1' }}> {/* Ensure it takes remaining space */}
+            <div className="dashboard" style={{ flex: '1' }}>
                 <div className="container">
                     <header className="dashboard-header">
                         <h2>Ağ Operasyon Merkezi</h2>
@@ -86,12 +83,12 @@ export default function Dashboard() {
                                     <p>İstanbul bölgesindeki {totalCount} abone izleniyor</p>
                                 </div>
 
-                                {/* Interactive Map Container - Background Removed */}
+                                {/* Interactive Map Container */}
                                 <div className="map-container" style={{ height: '350px', background: 'transparent', position: 'relative' }}>
                                     <InteractiveTurkeyMap subscribers={lists} />
                                 </div>
 
-                                {/* Legend - Kept outside for clarity */}
+                                {/* Legend */}
                                 <div className="map-legend" style={{ marginTop: '0', padding: '0.5rem', background: 'white' }}>
                                     <div className="legend-item">
                                         <span className="legend-pin green"></span>
@@ -110,17 +107,11 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* Subscriber List Modal */}
-                    <SubscriberListModal
-                        isOpen={isModalOpen}
-                        filter={modalFilter}
-                        subscribers={lists}
-                        onClose={() => setIsModalOpen(false)}
-                    />
+                    {/* Modal Removed - Navigation is used instead */}
                 </div>
             </div>
 
-            {/* Footer Component - Full Width, Outside Container */}
+            {/* Footer Component */}
             <Footer />
         </div>
     );

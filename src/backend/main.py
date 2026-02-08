@@ -8,14 +8,14 @@ import random
 import time
 import logging
 from datetime import datetime
-from src.backend import llm_service, sms_sender
-from src.backend.lstm_service import (
+import llm_service, sms_sender
+from lstm_service import (
     LSTMPredictionService,
     HybridEnsembleModel,
     PredictionResult
 )
-from src.backend.status_tracker import StatusTracker
-from src.backend.background_monitor import BackgroundMonitor
+from status_tracker import StatusTracker
+from background_monitor import BackgroundMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -394,10 +394,13 @@ def scan_network_batch():
         if color == "YELLOW": issue_text = "Yüksek Ping"
         elif color == "RED": issue_text = "Bağlantı Kopuk"
         
+        # region_id is actually the string name in DB (misnamed column)
+        
         results["lists"][color].append({
             "id": sub_id,
             "name": name,
-            "region": region,
+            "region": region, # Use the value from DB directly
+            "plan": plan,
             "issue": issue_text,
             "metrics": metrics
         })
