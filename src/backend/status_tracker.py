@@ -157,6 +157,67 @@ class StatusTracker:
                 "severity": "info"
             }
     
+    def should_allow_status_change(self, subscriber_id: int, new_status: str) -> dict:
+        """
+        Check if status change should be allowed based on minimum duration rules
+        
+        Rules:
+        - RED must stay for minimum 10 minutes before recovery
+        - YELLOW must stay for minimum 5 minutes before recovery
+        - Degradation (GREEN→YELLOW, YELLOW→RED) is always allowed
+        - GREEN has no minimum duration
+        
+        Returns:
+            {
+                "allowed": bool,
+                "reason": str,
+                "time_remaining_seconds": int (if blocked)
+            }
+        """
+        current = self.get_current_status(subscriber_id)
+        current_status = current["current"]
+        
+        # If status not changing, allow
+        if current_status == new_status:
+            return {"allowed": True, "reason": "No change"}
+        
+        # Degradation is always allowed (problem getting worse)
+        if (current_status, new_status) in [("GREEN", "YELLOW"), ("GREEN", "RED"), ("YELLOW", "RED")]:
+            return {"allowed": True, "reason": "Degradation allowed"}
+        
+        # Recovery check - need minimum duration
+        if (current_status, new_status) in [("RED", "YELLOW"), ("RED", "GREEN"), ("YELLOW", "GREEN")]:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                "SELECT status_changed_at FROM subscriber_status WHERE subscriber_id = %s",
+                (subscriber_id,)
+            )
+            result = cursor.fetchone()
+            
+            if not result or not result[0]:
+                # No timestamp, allow change
+                return {"allowed": True, "reason": "No previous timestamp"}
+            
+            status_changed_at = result[0]
+            time_elapsed = datetime.now() - status_changed_at
+            
+            # Minimum durations
+            min_duration_minutes = 10 if current_status == "RED" else 5  # RED=10min, YELLOW=5min
+            min_duration = timedelta(minutes=min_duration_minutes)
+            
+            if time_elapsed < min_duration:
+                remaining = (min_duration - time_elapsed).total_seconds()
+                return {
+                    "allowed": False,
+                    "reason": f"{current_status} status must persist for at least {min_duration_minutes} minutes",
+                    "time_remaining_seconds": int(remaining)
+                }
+            else:
+                return {"allowed": True, "reason": "Minimum duration elapsed"}
+        
+        # Other transitions allowed
+        return {"allowed": True, "reason": "Allowed"}
+    
     def mark_sms_sent(self, subscriber_id: int):
         """SMS gönderildi olarak işaretle"""
         cursor = self.conn.cursor()

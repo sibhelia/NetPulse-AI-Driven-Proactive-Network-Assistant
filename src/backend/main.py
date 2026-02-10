@@ -208,6 +208,36 @@ def simulate_network(subscriber_id: int, force_trouble: bool = False):
 
     name, plan, region, gender, phone, modem, ip, uptime = customer
     
+    # Generate unique location based on subscriber_id  
+    # İstanbul bölgeleri için yaklaşık koordinatlar
+    region_coords = {
+        "Kadıköy": (40.99, 29.03),
+        "Beşiktaş": (41.04, 29.00),
+        "Üsküdar": (41.02, 29.01),
+        "Şişli": (41.06, 28.99),
+        "Bakırköy": (40.98, 28.87)
+    }
+    
+    base_region = region.split('/')[0]  # "Kadıköy/Moda" -> "Kadıköy"
+    base_lat, base_lon = region_coords.get(base_region, (41.01, 28.98))
+    
+    # Her abone için benzersiz offset (subscriber_id'ye göre deterministic)
+    import hashlib
+    hash_val = int(hashlib.md5(str(subscriber_id).encode()).hexdigest(), 16)
+    lat_offset = (hash_val % 100) / 10000.0  # 0.0000-0.0099 arası
+    lon_offset = ((hash_val // 100) % 100) / 10000.0
+    
+    subscriber_lat = base_lat + lat_offset - 0.005  # Merkezden sapma
+    subscriber_lon = base_lon + lon_offset - 0.005
+    
+    # Rastgele sokak adı (subscriber_id'ye göre deterministic)
+    street_names = ["Bağdat Caddesi", "Nispetiye Caddesi", "Acıbadem Caddesi", 
+                    "Teşvikiye Caddesi", "Atatürk Caddesi", "Cumhuriyet Caddesi",
+                    "İstiklal Caddesi", "Bahariye Caddesi", "Moda Caddesi"]
+    street_index = subscriber_id % len(street_names)
+    building_no = (subscriber_id % 200) + 1
+    location_address = f"{street_names[street_index]} No:{building_no}, {region}"
+    
     # Fetch Recent Tickets
     cursor.execute("""
         SELECT t.created_at, t.issue_type, t.status, tech.name 
@@ -276,11 +306,34 @@ def simulate_network(subscriber_id: int, force_trouble: bool = False):
     # 3. Hybrid
     final_risk, segment_color, ensemble_reason = hybrid_model.combine_predictions(rf_result, lstm_result) if hybrid_model else (0, "GREEN", "System Log")
     
-    # [KRITIK] DB'de kayıtlı durum varsa onu kullan (Liste ile senkronize olması için)
-    # Liste sayfasında ne görünüyorsa detayda da o görünmeli
-    if db_status and db_status in ["RED", "YELLOW", "GREEN"]:
-        segment_color = db_status
-        ensemble_reason = f"DB synchronized status ({db_status})"
+    # [KRITIK] Status Persistence - Prevent rapid status flipping
+    # Use StatusTracker to enforce minimum durations (RED=10min, YELLOW=5min)
+    try:
+        tracker = StatusTracker(conn)
+        
+        # Check if we're allowed to change to the AI-predicted status
+        permission = tracker.should_allow_status_change(subscriber_id, segment_color)
+        
+        if not permission["allowed"]:
+            # Status change blocked - keep old status
+            logger.info(f"⏸️ Status change blocked for {subscriber_id}: {permission['reason']}")
+            # DB status varsa onu kullan, yoksa GREEN
+            segment_color = db_status if db_status else "GREEN"
+            ensemble_reason = f"Status locked: {permission['reason']}"
+        elif db_status and db_status != segment_color:
+            # Status change allowed and different from DB - update via tracker
+            logger.info(f"✅ Status change allowed for {subscriber_id}: {db_status} → {segment_color}")
+            tracker.update_status(subscriber_id, segment_color, fault_type="network_degradation")
+        elif not db_status:
+            # First time - initialize status
+            tracker.update_status(subscriber_id, segment_color)
+    except Exception as e:
+        logger.error(f"❌ StatusTracker error for {subscriber_id}: {e}")
+        # Fallback to old behavior
+        if db_status and db_status in ["RED", "YELLOW", "GREEN"]:
+            segment_color = db_status
+            ensemble_reason = f"DB synchronized status ({db_status})"
+
     
     # --- DETAILED NARRATIVE ANALYSIS ---
     analysis_story = ""
@@ -309,7 +362,12 @@ def simulate_network(subscriber_id: int, force_trouble: bool = False):
         "subscriber_id": subscriber_id,
         "customer_info": {
             "name": name, "plan": plan, "region": region, "phone": phone,
-            "modem": modem, "ip": ip, "uptime": uptime
+            "modem": modem, "ip": ip, "uptime": uptime, "gender": gender,
+            "location": {
+                "latitude": subscriber_lat,
+                "longitude": subscriber_lon,
+                "address": location_address
+            }
         },
         "live_metrics": live_data,
         "ai_analysis": {
@@ -352,8 +410,9 @@ def scan_network_batch():
         sub_id, name, plan, region = cust
         
         # Gerçekçi Dağılım İçin Zar Atıyoruz:
-        # %90 Yeşil, %7 Sarı, %3 Kırmızı
-        rand_val = random.randint(0, 100)
+        # Persistence (10dk) olduğu için çok düşük olasılıklar kullanıyoruz
+        # Hedef: 500 kişide anlık ~5-10 RED, ~15-20 YELLOW
+        rand_val = random.uniform(0, 100)
         
         # Hızlı simülasyon (Tekil fonksiyondan daha basit veriler)
         metrics = {
@@ -365,33 +424,52 @@ def scan_network_batch():
         
         ai_pred = 0
         
-        # Kırmızı Durumu Simüle Et (%3)
-        if rand_val > 97:
+        
+        
+        # Kırmızı Durumu Simüle Et (%0.05 Olasılık -> Her 2000 taramada 1)
+        # Hedef: Peak Hour simülasyonunu (25 RED) canlı tutmak
+        if rand_val > 99.95:
             metrics["packet_loss"] = random.uniform(10, 30)
             metrics["download_speed"] = 2.0
             ai_pred = 2
-        # Sarı Durumu Simüle Et (%7)
-        elif rand_val > 90:
+        # Sarı Durumu Simüle Et (%0.3 Olasılık -> Her 333 taramada 1)
+        # Hedef: Proaktif analiz (50 YELLOW) havuzunu beslemek
+        elif rand_val > 99.7:
             metrics["latency"] = random.uniform(90, 180) # Ping yükselmiş
             metrics["jitter"] = random.uniform(20, 50)
             ai_pred = 0 # AI henüz hata demiyor ama biz RISK görüyoruz
             
         # Segmentasyon Fonksiyonunu Çağır
-        color = classify_subscriber_status(metrics, ai_pred)
+        proposed_color = classify_subscriber_status(metrics, ai_pred)
         
-        # [NEW] DURUMU VERİTABANINA KAYDET (Senkronizasyon İçin)
+        # [PERSISTENCE] Status Tracker Entegrasyonu
+        # Random üretim GREEN dese bile, eğer DB'de RED varsa ve süre dolmadıysa RED kalmalı
+        
+        final_color = proposed_color
         try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO subscriber_status (subscriber_id, current_status, last_checked)
-                    VALUES (%s, %s, NOW())
-                    ON CONFLICT (subscriber_id) 
-                    DO UPDATE SET current_status = EXCLUDED.current_status, last_checked = NOW()
-                """, (sub_id, color))
-                conn.commit()
+            tracker = StatusTracker(conn)
+            permission = tracker.should_allow_status_change(sub_id, proposed_color)
+            
+            if permission["allowed"]:
+                # Değişikliğe izin var, yeni durumu kaydet
+                if proposed_color != "GREEN": # Sadece sorunları logla, performansı koru
+                    logger.info(f"⚡ Batch Scan: Status change allowed for {sub_id}: → {proposed_color}")
+                
+                tracker.update_status(sub_id, proposed_color)
+                final_color = proposed_color
+            else:
+                # İzin yok, mevcut durumu koru (DB'den ne geldiyse o)
+                # Ancak DB statüsünü bilmiyoruz, sorgulamamız lazım
+                current_status_info = tracker.get_current_status(sub_id)
+                final_color = current_status_info["current"]
+                # logger.info(f"🔒 Batch Scan: Status change blocked for {sub_id}: {permission['reason']}")
+
         except Exception as e:
-            print(f"Status update error: {e}")
-            conn.rollback()
+            logger.error(f"Batch scan persistence error: {e}")
+            # Hata durumunda proposed kullan
+            final_color = proposed_color
+            
+        color = final_color
 
         # İstatistiklere Ekle
         results["counts"][color] += 1
