@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import Footer from '../components/Footer';
 import { FaArrowLeft, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import './SubscriberListPage.css';
 
@@ -192,7 +191,6 @@ const SubscriberListPage = () => {
                     </div>
                 )}
             </div>
-            <Footer />
         </div>
     );
 };

@@ -3,7 +3,6 @@ import { api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import InteractiveTurkeyMap from '../components/InteractiveTurkeyMap';
 import StatusPieChart from '../components/StatusPieChart';
-import Footer from '../components/Footer';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -111,8 +110,7 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Footer Component */}
-            <Footer />
+            {/* Footer Removed - handled by App layout */}
         </div>
     );
 }

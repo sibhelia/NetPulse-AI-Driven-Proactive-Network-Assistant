@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import './Profile.css';
 import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 
 const Profile = ({ onLogout }) => {
     const [currentPassword, setCurrentPassword] = useState('');
