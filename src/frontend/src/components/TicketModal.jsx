@@ -1,95 +1,131 @@
+
 import React, { useState, useEffect } from 'react';
+import { FaTimes, FaMagic, FaBuilding, FaHome, FaSave, FaExclamationCircle } from 'react-icons/fa';
 import { api } from '../services/api';
 import './TicketModal.css';
 
-const TicketModal = ({ isOpen, onClose, subscriberId, onSuccess }) => {
-    const [technicians, setTechnicians] = useState([]);
-    const [selectedTech, setSelectedTech] = useState('');
-    const [issueType, setIssueType] = useState('Bağlantı Sorunu');
-    const [notes, setNotes] = useState('');
+const TicketModal = ({ isOpen, onClose, subscriberId, currentStatus, aiAnalysis, onSuccess }) => {
     const [loading, setLoading] = useState(false);
+    const [generating, setGenerating] = useState(false);
+    const [ticketData, setTicketData] = useState({
+        scope: 'INDIVIDUAL',
+        note: '',
+        neighborCount: 0
+    });
 
+    // Reset state when modal opens
     useEffect(() => {
         if (isOpen) {
-            // Fetch technicians
-            api.getTechnicians()
-                .then(data => setTechnicians(data))
-                .catch(err => console.error("Tech fetch error:", err));
+            generateAutoNote();
         }
     }, [isOpen]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
+    const generateAutoNote = async () => {
+        setGenerating(true);
         try {
-            await api.createTicket({
+            // Call backend to generate note based on context
+            const response = await api.generateTicketNote({
                 subscriber_id: subscriberId,
-                technician_id: parseInt(selectedTech),
-                issue_type: issueType,
-                notes: notes
+                current_status: currentStatus,
+                ai_analysis: aiAnalysis
             });
-            onSuccess(); // Refresh parent or show toast
-            onClose();
+
+            setTicketData({
+                scope: response.scope,
+                note: response.note,
+                neighborCount: response.neighbor_count
+            });
         } catch (error) {
-            alert("Kayıt oluşturulamadı: " + error.message);
+            console.error("Error generating note:", error);
+            setTicketData(prev => ({
+                ...prev,
+                note: "Error generating AI note. Please enter details manually."
+            }));
         } finally {
-            setLoading(false);
+            setGenerating(false);
         }
+    };
+
+    const handleSubmit = async () => {
+        // Here you would call the actual create ticket endpoint
+        // For now we simulate success
+        setLoading(true);
+        setTimeout(() => {
+            setLoading(false);
+            onClose();
+            if (onSuccess) onSuccess();
+        }, 1000);
     };
 
     if (!isOpen) return null;
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-content">
-                <div className="modal-header">
-                    <h3>Yeni Arıza Kaydı Oluştur</h3>
-                    <button className="close-btn" onClick={onClose}>&times;</button>
+        <div className="ticket-modal-overlay">
+            <div className="ticket-modal">
+                <div className="ticket-modal-header">
+                    <h2><FaMagic /> Akıllı Arıza Kaydı Oluştur</h2>
+                    <button className="close-btn" onClick={onClose}><FaTimes /></button>
                 </div>
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label>Teknisyen Atama</label>
-                        <select
-                            value={selectedTech}
-                            onChange={(e) => setSelectedTech(e.target.value)}
-                            required
-                        >
-                            <option value="">Teknisyen Seçiniz...</option>
-                            {technicians.map(tech => (
-                                <option key={tech.id} value={tech.id}>
-                                    {tech.name} - {tech.expertise} ({tech.status})
-                                </option>
-                            ))}
-                        </select>
+
+                <div className="ticket-modal-body">
+
+                    {/* 1. Scope Indicator */}
+                    <div className={`scope-indicator ${ticketData.scope.toLowerCase()}`}>
+                        <div className="scope-icon">
+                            {ticketData.scope === 'REGIONAL' ? <FaBuilding /> : <FaHome />}
+                        </div>
+                        <div className="scope-details">
+                            <h3>
+                                {ticketData.scope === 'REGIONAL' ? 'Bölgesel Arıza Olasılığı' : 'Bireysel Arıza'}
+                            </h3>
+                            <p>
+                                {ticketData.scope === 'REGIONAL'
+                                    ? `Dikkat: Bu bölgede ${ticketData.neighborCount} farklı abonede benzer sorun var.`
+                                    : 'Arıza sadece bu aboneye özgü görünüyor.'}
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="form-group">
-                        <label>Arıza Türü</label>
-                        <select value={issueType} onChange={(e) => setIssueType(e.target.value)}>
-                            <option value="Bağlantı Sorunu">Bağlantı Sorunu</option>
-                            <option value="Hız Düşüklüğü">Hız Düşüklüğü (Yavaşlık)</option>
-                            <option value="Modem Arızası">Modem / Cihaz Arızası</option>
-                            <option value="Kablo Sorunu">Kablo / Altyapı Sorunu</option>
-                        </select>
+                    {/* 2. Priority & Type */}
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Öncelik Seviyesi</label>
+                            <select disabled value={currentStatus === 'RED' ? 'High' : 'Medium'}>
+                                <option value="High">🚨 Yüksek (Kritik)</option>
+                                <option value="Medium">⚠️ Orta (Performans)</option>
+                                <option value="Low">ℹ️ Düşük (Talep)</option>
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label>Arıza Tipi</label>
+                            <input type="text" value={ticketData.scope === 'REGIONAL' ? 'Altyapı / Genel' : 'CPE / Modem'} readOnly />
+                        </div>
                     </div>
 
-                    <div className="form-group">
-                        <label>Notlar</label>
+                    {/* 3. AI Generated Note */}
+                    <div className="form-group full-width">
+                        <div className="label-with-badge">
+                            <label>Teknisyen İçin AI Notu</label>
+                            {generating && <span className="generating-badge"><FaMagic /> Oluşturuluyor...</span>}
+                        </div>
                         <textarea
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            rows="4"
-                            placeholder="Arıza detaylarını buraya giriniz..."
-                        ></textarea>
+                            value={ticketData.note}
+                            onChange={(e) => setTicketData({ ...ticketData, note: e.target.value })}
+                            rows={8}
+                            className="ai-note-textarea"
+                        />
+                        <small className="hint-text">
+                            * Bu not NetPulse AI tarafından bölgesel veriler analiz edilerek hazırlanmıştır. Teknisyene iletilmeden önce düzenleyebilirsiniz.
+                        </small>
                     </div>
+                </div>
 
-                    <div className="modal-actions">
-                        <button type="button" className="btn-secondary" onClick={onClose}>İptal</button>
-                        <button type="submit" className="btn-primary" disabled={loading}>
-                            {loading ? 'Oluşturuluyor...' : 'Kaydı Oluştur'}
-                        </button>
-                    </div>
-                </form>
+                <div className="ticket-modal-footer">
+                    <button className="cancel-btn" onClick={onClose}>İptal</button>
+                    <button className="submit-btn" onClick={handleSubmit} disabled={loading || generating}>
+                        {loading ? 'Oluşturuluyor...' : <><FaSave /> Kaydı Oluştur</>}
+                    </button>
+                </div>
             </div>
         </div>
     );

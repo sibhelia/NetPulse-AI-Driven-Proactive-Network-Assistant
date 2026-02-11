@@ -201,8 +201,8 @@ class StatusTracker:
             status_changed_at = result[0]
             time_elapsed = datetime.now() - status_changed_at
             
-            # Minimum durations
-            min_duration_minutes = 10 if current_status == "RED" else 5  # RED=10min, YELLOW=5min
+            # Minimum durations (Demo için uzatıldı: 1 Saat / 30 Dk)
+            min_duration_minutes = 60 if current_status == "RED" else 30  # RED=60min, YELLOW=30min
             min_duration = timedelta(minutes=min_duration_minutes)
             
             if time_elapsed < min_duration:

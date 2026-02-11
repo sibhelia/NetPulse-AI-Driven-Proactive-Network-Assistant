@@ -64,5 +64,16 @@ export const api = {
             method: 'POST'
         });
         return await res.json();
+    },
+
+    // --- NEW: Smart Ticket Note Generation ---
+    generateTicketNote: async (data) => {
+        const res = await fetch(`${API_BASE}/api/generate_ticket_note`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Note generation failed');
+        return await res.json();
     }
 };

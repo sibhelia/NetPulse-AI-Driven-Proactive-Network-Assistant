@@ -577,3 +577,91 @@ async def shutdown_event():
     if background_monitor:
         background_monitor.stop()
     logger.info("👋 NetPulse Backend kapatıldı")
+
+# --- 3. ENDPOINT: ENHANCED TICKET NOTE GENERATION (LLM Style) ---
+class TicketRequest(BaseModel):
+    subscriber_id: int
+    current_status: str
+    ai_analysis: str
+
+@app.post("/api/generate_ticket_note")
+def generate_ticket_note(request: TicketRequest):
+    """
+    Generates a professional technician note based on subscriber status and regional context.
+    Simulates an LLM response for speed and reliability.
+    """
+    try:
+        conn = get_db_connection()
+        if not conn:
+            raise HTTPException(status_code=500, detail="Database fail")
+        
+        cursor = conn.cursor()
+        
+        # 1. Get detailed subscriber info
+        cursor.execute("""
+            SELECT region_id, modem_model 
+            FROM customers WHERE subscriber_id = %s
+        """, (request.subscriber_id,))
+        cust_data = cursor.fetchone()
+        
+        if not cust_data:
+             return {"note": "Subscriber not found.", "scope": "INDIVIDUAL"}
+             
+        region_id, modem_model = cust_data
+        
+        # 2. Analyze Regional Context (Is it a regional outage?)
+        # Count other faulty subscribers in the same region
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM customers c
+            JOIN subscriber_status s ON c.subscriber_id = s.subscriber_id
+            WHERE c.region_id = %s 
+              AND s.current_status IN ('RED', 'YELLOW')
+              AND c.subscriber_id != %s
+        """, (region_id, request.subscriber_id))
+        
+        neighbor_faults = cursor.fetchone()[0]
+        
+        # Determine Scope
+        scope = "REGIONAL" if neighbor_faults > 3 else "INDIVIDUAL"
+        scope_icon = "🏢" if scope == "REGIONAL" else "🏠"
+        
+        # 3. Generate Note based on Status and Scope
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        
+        note_parts = []
+        note_parts.append(f"**Teknisyen Notu - {timestamp}**")
+        note_parts.append(f"**Arıza Kapsamı:** {scope_icon} {scope} ({neighbor_faults} komşu etkilendi)")
+        note_parts.append(f"**Cihaz:** {modem_model}")
+        note_parts.append(f"**AI Analizi:** {request.ai_analysis}")
+        
+        if request.current_status == "RED":
+            if scope == "REGIONAL":
+                note_parts.append("\n**Teşhis:** Bölgesel Altyapı Arızası tespit edildi.")
+                note_parts.append("**Önerilen İşlem:** {}. Bölge dağıtım switch'ini ve fiber hattını kontrol edin. Bölgesel sorun çözülmeden eve ekip yönlendirmeyin.".format(region_id))
+            else:
+                note_parts.append("\n**Teşhis:** İzole Kritik Arıza.")
+                note_parts.append("**Önerilen İşlem:** Adrese saha ekibi yönlendirin. Bina girişi ve modem/ONT güç değerlerini kontrol edin.")
+                
+        elif request.current_status == "YELLOW":
+            note_parts.append("\n**Teşhis:** Performans Düşüklüğü / Tıkanıklık.")
+            note_parts.append("**Önerilen İşlem:** Uzaktan hat testi yapın. SNR marjlarını kontrol edin. Sorun genel ise Peak Hour takibi yapın.")
+            
+        else:
+            note_parts.append("\n**Teşhis:** Abone çevrimiçi ancak sorun bildiriyor.")
+            note_parts.append("**Önerilen İşlem:** Şikayet detayı için müşteriyle iletişime geçin.")
+            
+        final_note = "\n".join(note_parts)
+        
+        conn.close()
+        
+        return {
+            "scope": scope,
+            "note": final_note,
+            "neighbor_count": neighbor_faults
+        }
+
+    except Exception as e:
+        logger.error(f"Ticket Generation Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

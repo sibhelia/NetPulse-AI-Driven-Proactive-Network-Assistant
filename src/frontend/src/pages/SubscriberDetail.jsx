@@ -228,27 +228,31 @@ const SubscriberDetail = () => {
                             <h3><FaExclamationTriangle /> NetPulse AI Analizi (Admin Raporu)</h3>
                         </div>
                         <div className="analysis-content">
-                            <div className="analysis-text">
+                            <div className="analysis-text" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                                 <p className="analysis-story">
                                     {ai_analysis.story || ai_analysis.explanation}
                                 </p>
-                                <div className="analysis-meta">
-                                    <div className="meta-item">
-                                        <strong>Tahmini Çözüm:</strong> {ai_analysis.estimated_fix || 'Belirsiz'}
+
+                                <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
+                                    <div className="analysis-meta" style={{ marginBottom: '1rem', border: 'none', padding: 0, background: 'transparent' }}>
+                                        <div className="meta-item">
+                                            <strong>Tahmini Çözüm:</strong> {ai_analysis.estimated_fix || 'Belirsiz'}
+                                        </div>
+                                        <div className="meta-item">
+                                            <strong>Risk Skoru:</strong> {(ai_analysis.risk_score * 100).toFixed(0)}/100
+                                        </div>
                                     </div>
-                                    <div className="meta-item">
-                                        <strong>Risk Skoru:</strong> {(ai_analysis.risk_score * 100).toFixed(0)}/100
-                                    </div>
+
+                                    {/* SMS Notification Button for RED/YELLOW status */}
+                                    {(ai_analysis.segment === 'RED' || ai_analysis.segment === 'YELLOW') && (
+                                        <button
+                                            className="sms-notify-btn"
+                                            onClick={() => alert(`SMS gönderilecek: Sayın ${customer_info.name}, internet bağlantınızda bir sorun tespit ettik. Ekiplerimiz durumdan haberdar edildi ve en kısa sürede iletişime geçecektir. - NetPulse Destek`)}
+                                        >
+                                            <FaBolt /> Kullanıcıyı Bilgilendir (SMS)
+                                        </button>
+                                    )}
                                 </div>
-                                {/* SMS Notification Button for RED/YELLOW status */}
-                                {(ai_analysis.segment === 'RED' || ai_analysis.segment === 'YELLOW') && (
-                                    <button
-                                        className="sms-notify-btn"
-                                        onClick={() => alert(`SMS gönderilecek: Sayın ${customer_info.name}, internet bağlantınızda bir sorun tespit ettik. Ekiplerimiz durumdan haberdar edildi ve en kısa sürede iletişime geçecektir. - NetPulse Destek`)}
-                                    >
-                                        <FaBolt /> Kullanıcıyı Bilgilendir (SMS)
-                                    </button>
-                                )}
                             </div>
                         </div>
                     </div>
