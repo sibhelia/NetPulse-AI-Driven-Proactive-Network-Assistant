@@ -875,7 +875,7 @@ def get_all_tickets(status: Optional[str] = None, limit: int = 50):
                 SELECT 
                     t.ticket_id, t.subscriber_id, t.status, t.priority, 
                     t.fault_type, t.scope, t.assigned_to, t.created_at,
-                    c.name, c.location, c.phone
+                    c.full_name, c.region_id, c.phone_number
                 FROM tickets t
                 LEFT JOIN customers c ON t.subscriber_id = c.subscriber_id
                 WHERE t.status = %s
@@ -894,7 +894,7 @@ def get_all_tickets(status: Optional[str] = None, limit: int = 50):
                 SELECT 
                     t.ticket_id, t.subscriber_id, t.status, t.priority, 
                     t.fault_type, t.scope, t.assigned_to, t.created_at,
-                    c.name, c.location, c.phone
+                    c.full_name, c.region_id, c.phone_number
                 FROM tickets t
                 LEFT JOIN customers c ON t.subscriber_id = c.subscriber_id
                 WHERE t.status != 'CLOSED'
