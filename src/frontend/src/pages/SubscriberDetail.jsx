@@ -320,6 +320,9 @@ const SubscriberDetail = () => {
                 isOpen={isTicketModalOpen}
                 onClose={() => setIsTicketModalOpen(false)}
                 subscriberId={subscriber.subscriber_id}
+                currentStatus={ai_analysis.segment}
+                aiAnalysis={ai_analysis.reason}
+                liveMetrics={live_metrics}
                 onSuccess={() => {
                     fetchSubscriber();
                     alert("Arıza kaydı başarıyla oluşturuldu ve ekibe iletildi.");

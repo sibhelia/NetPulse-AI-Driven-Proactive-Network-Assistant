@@ -116,20 +116,46 @@ def create_database():
         cursor.execute(create_tech_table)
         print("✅ 'technicians' tablosu oluşturuldu")
 
-        # 4. Tickets Table (Arıza Kayıtları)
+        # 4. Tickets Table (Arıza Kayıtları) - YENİ TASARIM
         create_tickets_table = """
         CREATE TABLE tickets (
             ticket_id SERIAL PRIMARY KEY,
             subscriber_id INTEGER REFERENCES customers(subscriber_id),
-            technician_id INTEGER REFERENCES technicians(id),
-            issue_type VARCHAR(50),
-            status VARCHAR(20) DEFAULT 'Open', -- Open, In Progress, Resolved
+            status VARCHAR(20) DEFAULT 'CREATED',
+            priority VARCHAR(10) NOT NULL,
+            fault_type VARCHAR(50),
+            scope VARCHAR(20),
+            technician_note TEXT,
+            assigned_to VARCHAR(100),
             created_at TIMESTAMP DEFAULT NOW(),
-            notes TEXT
+            updated_at TIMESTAMP DEFAULT NOW(),
+            resolved_at TIMESTAMP,
+            resolution_note TEXT
         );
         """
         cursor.execute(create_tickets_table)
         print("✅ 'tickets' tablosu oluşturuldu")
+
+        # 5. Ticket Status History Table (Durum Geçmişi)
+        create_status_history = """
+        CREATE TABLE ticket_status_history (
+            history_id SERIAL PRIMARY KEY,
+            ticket_id INTEGER REFERENCES tickets(ticket_id) ON DELETE CASCADE,
+            old_status VARCHAR(20),
+            new_status VARCHAR(20) NOT NULL,
+            changed_by VARCHAR(100),
+            changed_at TIMESTAMP DEFAULT NOW(),
+            note TEXT
+        );
+        """
+        cursor.execute(create_status_history)
+        print("✅ 'ticket_status_history' tablosu oluşturuldu")
+
+        # Index'ler
+        cursor.execute("CREATE INDEX idx_tickets_subscriber ON tickets(subscriber_id);")
+        cursor.execute("CREATE INDEX idx_tickets_status ON tickets(status);")
+        cursor.execute("CREATE INDEX idx_history_ticket ON ticket_status_history(ticket_id);")
+        print("✅ Ticket index'leri oluşturuldu")
 
         # --- DATA GENERATION ---
 
@@ -188,14 +214,7 @@ def create_database():
                 "INSERT INTO subscriber_status (subscriber_id, current_status) VALUES (%s, 'GREEN')",
                 (sub_id,)
             )
-
-            # Rastgele eski ticketlar oluştur (History dolu görünsün)
-            if random.random() < 0.1: # %10 şansla eski kaydı olsun
-                tech_id = random.randint(1, len(TECHNICIANS))
-                cursor.execute("""
-                    INSERT INTO tickets (subscriber_id, technician_id, issue_type, status, created_at, notes)
-                    VALUES (%s, %s, 'Connection Lost', 'Resolved', NOW() - INTERVAL '3 days', 'Modem resetlendi, sorun çözüldü.')
-                """, (sub_id, tech_id))
+        
         
         print(f"✅ İŞLEM TAMAM! {len(customers_data)} müşteri kaydedildi.")
         conn.close()

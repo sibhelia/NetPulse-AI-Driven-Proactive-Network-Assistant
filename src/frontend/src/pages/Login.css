@@ -13,7 +13,7 @@
     border-radius: 20px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
     width: 100%;
-    max-width: 450px;
+    max-width: 550px;
     text-align: center;
     transition: transform 0.3s ease;
 }
@@ -45,6 +45,52 @@
 .login-header p {
     color: #7F8C8D;
     font-size: 0.95rem;
+}
+
+/* Role Selector */
+.role-selector {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.role-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    border: 2px solid #e0e0e0;
+    background: white;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.role-btn svg {
+    font-size: 2rem;
+    color: #94a3b8;
+    transition: all 0.3s;
+}
+
+.role-btn:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.role-btn.active {
+    border-color: #5e548e;
+    background: linear-gradient(135deg, #f8f7fc 0%, #ede9f9 100%);
+    color: #5e548e;
+}
+
+.role-btn.active svg {
+    color: #5e548e;
+    transform: scale(1.1);
 }
 
 .login-form {

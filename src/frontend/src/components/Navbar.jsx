@@ -9,6 +9,11 @@ export default function Navbar({ onLogout }) {
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
+    // Get user role from localStorage
+    const userRole = localStorage.getItem('userRole') || 'admin';
+    const userName = userRole === 'admin' ? 'Admin' : 'Saha Ekibi';
+    const userRoleText = userRole === 'admin' ? 'Yönetici' : 'Teknisyen';
+
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentTime(new Date());
@@ -42,6 +47,10 @@ export default function Navbar({ onLogout }) {
     };
 
     const handleLogoutClick = () => {
+        // Clear localStorage
+        localStorage.removeItem('auth');
+        localStorage.removeItem('userRole');
+
         if (onLogout) onLogout();
         navigate('/login');
     };
@@ -86,8 +95,8 @@ export default function Navbar({ onLogout }) {
                         >
                             <FaUserCircle className="admin-avatar" />
                             <div className="admin-info">
-                                <span className="admin-name">Admin</span>
-                                <span className="admin-role">Yönetici</span>
+                                <span className="admin-name">{userName}</span>
+                                <span className="admin-role">{userRoleText}</span>
                             </div>
                             <FaChevronDown className={`chevron ${isDropdownOpen ? 'rotate' : ''}`} />
                         </div>
@@ -112,3 +121,4 @@ export default function Navbar({ onLogout }) {
         </nav>
     );
 }
+

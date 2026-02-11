@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
 import SubscriberDetail from './pages/SubscriberDetail';
 import SubscriberListPage from './pages/SubscriberListPage';
+import FieldTeamDashboard from './pages/FieldTeamDashboard';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
 
@@ -78,6 +79,14 @@ function App() {
                     element={
                         <ProtectedLayout>
                             <Profile onLogout={handleLogout} />
+                        </ProtectedLayout>
+                    }
+                />
+                <Route
+                    path="/field-team"
+                    element={
+                        <ProtectedLayout>
+                            <FieldTeamDashboard />
                         </ProtectedLayout>
                     }
                 />

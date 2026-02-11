@@ -1,19 +1,37 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaUserShield, FaUserCog } from 'react-icons/fa';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [role, setRole] = useState('admin'); // admin | field_team
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
+    // Credential'lar
+    const credentials = {
+        admin: { username: 'admin', password: 'netpulse2026' },
+        field_team: { username: 'sahateam', password: 'team2026' }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Simple mock authentication
-        if (username === 'admin' && password === '1234') {
+
+        const validCred = credentials[role];
+
+        if (username === validCred.username && password === validCred.password) {
+            // Role bilgisini localStorage'a kaydet
+            localStorage.setItem('userRole', role);
             onLogin();
-            navigate('/'); // Redirect to Dashboard
+
+            // Role'e göre yönlendir
+            if (role === 'admin') {
+                navigate('/');
+            } else {
+                navigate('/field-team');
+            }
         } else {
             setError('Kullanıcı adı veya şifre hatalı!');
         }
@@ -28,6 +46,26 @@ const Login = ({ onLogin }) => {
                     <p>Lütfen devam etmek için giriş yapın</p>
                 </div>
 
+                {/* Role Seçimi */}
+                <div className="role-selector">
+                    <button
+                        type="button"
+                        className={`role-btn ${role === 'admin' ? 'active' : ''}`}
+                        onClick={() => setRole('admin')}
+                    >
+                        <FaUserShield />
+                        <span>Admin</span>
+                    </button>
+                    <button
+                        type="button"
+                        className={`role-btn ${role === 'field_team' ? 'active' : ''}`}
+                        onClick={() => setRole('field_team')}
+                    >
+                        <FaUserCog />
+                        <span>Saha Ekibi</span>
+                    </button>
+                </div>
+
                 <form onSubmit={handleSubmit} className="login-form">
                     <div className="form-group">
                         <label htmlFor="username">Kullanıcı Adı</label>
@@ -36,7 +74,7 @@ const Login = ({ onLogin }) => {
                             id="username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            placeholder="Kullanıcı adınızı girin"
+                            placeholder={role === 'admin' ? 'admin' : 'sahateam'}
                             required
                         />
                     </div>

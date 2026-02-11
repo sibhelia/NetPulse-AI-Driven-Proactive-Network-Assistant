@@ -1,0 +1,148 @@
+.ticket-progress-container {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ticket-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.ticket-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.ticket-id {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #1e293b;
+}
+
+.priority-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.priority-badge.high {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.priority-badge.medium {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.priority-badge.low {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.ticket-scope {
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.ticket-time {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+/* Progress Bar */
+.progress-bar-wrapper {
+    position: relative;
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.progress-fill {
+    height: 100%;
+    transition: width 0.5s ease;
+}
+
+/* Status Steps */
+.status-steps {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+}
+
+.status-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.step-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.3s;
+}
+
+.step-completed .step-icon {
+    background: #10b981;
+    color: white;
+}
+
+.step-active .step-icon {
+    background: #7c3aed;
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.step-pending .step-icon {
+    background: #e2e8f0;
+    color: #94a3b8;
+}
+
+.step-label {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+    text-align: center;
+}
+
+.step-completed .step-label {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.step-active .step-label {
+    color: #7c3aed;
+    font-weight: 700;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.7);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 8px rgba(124, 58, 237, 0);
+    }
+}

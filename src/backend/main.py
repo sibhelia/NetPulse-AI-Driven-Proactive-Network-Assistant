@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional
 import psycopg2
 import pandas as pd
 import joblib
@@ -238,11 +240,10 @@ def simulate_network(subscriber_id: int, force_trouble: bool = False):
     building_no = (subscriber_id % 200) + 1
     location_address = f"{street_names[street_index]} No:{building_no}, {region}"
     
-    # Fetch Recent Tickets
+    # Fetch Recent Tickets (YENİ SCHEMA)
     cursor.execute("""
-        SELECT t.created_at, t.issue_type, t.status, tech.name 
+        SELECT t.created_at, t.fault_type, t.status, t.assigned_to
         FROM tickets t 
-        LEFT JOIN technicians tech ON t.technician_id = tech.id
         WHERE t.subscriber_id = %s 
         ORDER BY t.created_at DESC LIMIT 5
     """, (subscriber_id,))
@@ -583,12 +584,12 @@ class TicketRequest(BaseModel):
     subscriber_id: int
     current_status: str
     ai_analysis: str
+    live_metrics: Optional[dict] = None
 
 @app.post("/api/generate_ticket_note")
 def generate_ticket_note(request: TicketRequest):
     """
-    Generates a professional technician note based on subscriber status and regional context.
-    Simulates an LLM response for speed and reliability.
+    Profesyonel teknisyen notu oluşturur - Structured JSON formatında döner
     """
     try:
         conn = get_db_connection()
@@ -597,7 +598,7 @@ def generate_ticket_note(request: TicketRequest):
         
         cursor = conn.cursor()
         
-        # 1. Get detailed subscriber info
+        # 1. Abone bilgilerini al
         cursor.execute("""
             SELECT region_id, modem_model 
             FROM customers WHERE subscriber_id = %s
@@ -605,12 +606,18 @@ def generate_ticket_note(request: TicketRequest):
         cust_data = cursor.fetchone()
         
         if not cust_data:
-             return {"note": "Subscriber not found.", "scope": "INDIVIDUAL"}
+             return {
+                 "scope": "INDIVIDUAL", 
+                 "neighbor_count": 0,
+                 "header": {},
+                 "metrics": {},
+                 "diagnosis": {},
+                 "actions": []
+             }
              
         region_id, modem_model = cust_data
         
-        # 2. Analyze Regional Context (Is it a regional outage?)
-        # Count other faulty subscribers in the same region
+        # 2. Bölgesel Analiz
         cursor.execute("""
             SELECT COUNT(*) 
             FROM customers c
@@ -621,47 +628,456 @@ def generate_ticket_note(request: TicketRequest):
         """, (region_id, request.subscriber_id))
         
         neighbor_faults = cursor.fetchone()[0]
+        conn.close()
         
-        # Determine Scope
+        # 3. Kapsam Belirleme
         scope = "REGIONAL" if neighbor_faults > 3 else "INDIVIDUAL"
-        scope_icon = "🏢" if scope == "REGIONAL" else "🏠"
         
-        # 3. Generate Note based on Status and Scope
-        import datetime
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        # 4. Öncelik ve Durum
+        priority_map = {
+            "RED": ("YÜKSEK", "🔴"),
+            "YELLOW": ("ORTA", "🟡"),
+            "GREEN": ("DÜŞÜK", "🟢")
+        }
+        priority, status_icon = priority_map.get(request.current_status, ("DÜŞÜK", "⚪"))
         
-        note_parts = []
-        note_parts.append(f"**Teknisyen Notu - {timestamp}**")
-        note_parts.append(f"**Arıza Kapsamı:** {scope_icon} {scope} ({neighbor_faults} komşu etkilendi)")
-        note_parts.append(f"**Cihaz:** {modem_model}")
-        note_parts.append(f"**AI Analizi:** {request.ai_analysis}")
+        status_tr = {
+            "RED": "KIRMIZI (Kritik Arıza)",
+            "YELLOW": "SARI (Performans Düşüklüğü)",
+            "GREEN": "YEŞİL (Normal)"
+        }
+        
+        # 5. Metrikler
+        metrics = request.live_metrics or {}
+        latency = metrics.get('latency', 0)
+        packet_loss = metrics.get('packet_loss', 0)
+        download_speed = metrics.get('download_speed', 0)
+        jitter = metrics.get('jitter', 0)
+        
+        metrics_data = {
+            "latency": {"value": latency, "unit": "ms", "threshold": 50, "ok": latency < 50},
+            "packet_loss": {"value": packet_loss, "unit": "%", "threshold": 1, "ok": packet_loss < 1},
+            "download_speed": {"value": download_speed, "unit": "Mbps", "threshold": 50, "ok": download_speed > 50},
+            "jitter": {"value": jitter, "unit": "ms", "threshold": 10, "ok": jitter < 10}
+        }
+        
+        # 6. Teşhis ve Aksiyonlar
+        diagnosis = ""
+        actions = []
+        estimated_time = ""
         
         if request.current_status == "RED":
             if scope == "REGIONAL":
-                note_parts.append("\n**Teşhis:** Bölgesel Altyapı Arızası tespit edildi.")
-                note_parts.append("**Önerilen İşlem:** {}. Bölge dağıtım switch'ini ve fiber hattını kontrol edin. Bölgesel sorun çözülmeden eve ekip yönlendirmeyin.".format(region_id))
+                diagnosis = f"Bölgesel Altyapı Arızası - {region_id} bölgesinde yaygın sorun tespit edildi."
+                actions = [
+                    f"[ACİL] {region_id} bölge switch'ini ve OLT'yi kontrol edin",
+                    "Fiber hat güç seviyelerini test edin (PON power levels)",
+                    "Bölgesel sorun çözülmeden müşteri evine ekip GÖNDERMEYİN",
+                    f"Diğer etkilenen {neighbor_faults} aboneyi toplu bilgilendirin"
+                ]
+                estimated_time = "2-4 Saat"
             else:
-                note_parts.append("\n**Teşhis:** İzole Kritik Arıza.")
-                note_parts.append("**Önerilen İşlem:** Adrese saha ekibi yönlendirin. Bina girişi ve modem/ONT güç değerlerini kontrol edin.")
+                diagnosis = "İzole Kritik Arıza - Sadece bu aboneye özel sorun."
+                actions = [
+                    "[ACİL] Saha ekibi görevlendir",
+                    "Bina girişi fiber bağlantısını kontrol et",
+                    "Modem/ONT güç seviyelerini ölç (RX/TX power)",
+                    "Gerekirse modem değişimi yap"
+                ]
+                estimated_time = "45-90 Dakika"
                 
         elif request.current_status == "YELLOW":
-            note_parts.append("\n**Teşhis:** Performans Düşüklüğü / Tıkanıklık.")
-            note_parts.append("**Önerilen İşlem:** Uzaktan hat testi yapın. SNR marjlarını kontrol edin. Sorun genel ise Peak Hour takibi yapın.")
+            diagnosis = "Performans Düşüklüğü / Tıkanıklık tespit edildi."
+            actions = [
+                "Uzaktan hat testi yap (remote line test)",
+                "SNR ve attenuation değerlerini kontrol et"
+            ]
+            if scope == "REGIONAL":
+                actions.append(f"Bölgesel yük kontrolü yap - {neighbor_faults} komşu da etkilenmiş")
+                actions.append("Peak hour traffic analizi yapılmalı")
+            else:
+                actions.append("Müşteriye WiFi optimizasyonu öner")
+                actions.append("Modem firmware güncellemesi kontrol et")
+            estimated_time = "30-60 Dakika"
             
-        else:
-            note_parts.append("\n**Teşhis:** Abone çevrimiçi ancak sorun bildiriyor.")
-            note_parts.append("**Önerilen İşlem:** Şikayet detayı için müşteriyle iletişime geçin.")
-            
-        final_note = "\n".join(note_parts)
+        else:  # GREEN
+            diagnosis = "Abone hattı stabil görünüyor, müşteri şikayeti araştırılmalı."
+            actions = [
+                "Müşteriyle iletişime geç - şikayet detayını öğren",
+                "Belirli uygulamalar için sorun mu var kontrol et",
+                "Cihaz/WiFi seviyesinde sorun olabilir"
+            ]
+            estimated_time = "15-30 Dakika"
         
-        conn.close()
+        # 7. Structured Response
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
         
         return {
             "scope": scope,
-            "note": final_note,
-            "neighbor_count": neighbor_faults
+            "neighbor_count": neighbor_faults,
+            "header": {
+                "timestamp": timestamp,
+                "subscriber_id": request.subscriber_id,
+                "region": region_id,
+                "modem": modem_model,
+                "priority": priority,
+                "status": status_tr.get(request.current_status, 'UNKNOWN'),
+                "status_icon": status_icon
+            },
+            "metrics": metrics_data,
+            "diagnosis": {
+                "text": diagnosis,
+                "ai_analysis": request.ai_analysis,
+                "estimated_time": estimated_time
+            },
+            "actions": actions
         }
 
     except Exception as e:
         logger.error(f"Ticket Generation Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ===================================================================
+# TICKET MANAGEMENT ENDPOINTS
+# ===================================================================
+
+class TicketCreate(BaseModel):
+    subscriber_id: int
+    priority: str  # HIGH, MEDIUM, LOW
+    fault_type: str  # INFRASTRUCTURE, CPE, NETWORK
+    scope: str  # REGIONAL, INDIVIDUAL
+    technician_note: str
+    assigned_to: Optional[str] = "Teknisyen Ekibi"
+
+class TicketStatusUpdate(BaseModel):
+    new_status: str  # CREATED, ASSIGNED, EN_ROUTE, ON_SITE, RESOLVED, CLOSED
+    changed_by: str
+    note: Optional[str] = None
+
+class TechnicianNote(BaseModel):
+    note: str
+    author: str
+
+
+@app.post("/api/tickets")
+def create_ticket(ticket: TicketCreate):
+    """
+    Yeni ticket oluşturur ve action_log'a kaydeder.
+    """
+    try:
+        conn = get_db_connection()
+        if not conn:
+            raise HTTPException(status_code=500, detail="Database connection failed")
+        
+        cursor = conn.cursor()
+        
+        # 1. Ticket oluştur
+        cursor.execute("""
+            INSERT INTO tickets 
+            (subscriber_id, status, priority, fault_type, scope, technician_note, assigned_to)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING ticket_id, created_at
+        """, (
+            ticket.subscriber_id,
+            'CREATED',
+            ticket.priority,
+            ticket.fault_type,
+            ticket.scope,
+            ticket.technician_note,
+            ticket.assigned_to
+        ))
+        
+        ticket_id, created_at = cursor.fetchone()
+        
+        # 2. İlk status history kaydı
+        cursor.execute("""
+            INSERT INTO ticket_status_history
+            (ticket_id, old_status, new_status, changed_by, note)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (ticket_id, None, 'CREATED', 'System', f'Ticket oluşturuldu - {ticket.assigned_to}'))
+        
+        # 3. Action log'a kaydet
+        cursor.execute("""
+            INSERT INTO action_log 
+            (subscriber_id, action_type, new_status, note, timestamp)
+            VALUES (%s, %s, %s, %s, NOW())
+        """, (
+            ticket.subscriber_id,
+            'ticket_created',
+            ticket.priority,
+            f'Arıza kaydı #{ticket_id} oluşturuldu - {ticket.scope} arıza'
+        ))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return {
+            "success": True,
+            "ticket_id": ticket_id,
+            "status": "CREATED",
+            "created_at": created_at.isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Ticket Creation Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/tickets/{subscriber_id}")
+def get_subscriber_tickets(subscriber_id: int):
+    """
+    Bir abone'nin tüm ticketlarını getirir (son 30 gün).
+    """
+    try:
+        conn = get_db_connection()
+        if not conn:
+            raise HTTPException(status_code=500, detail="Database fail")
+        
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                ticket_id, status, priority, fault_type, scope,
+                assigned_to, created_at, updated_at, resolved_at
+            FROM tickets
+            WHERE subscriber_id = %s
+            AND created_at >= NOW() - INTERVAL '30 days'
+            ORDER BY created_at DESC
+        """, (subscriber_id,))
+        
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        tickets = []
+        for row in rows:
+            tickets.append({
+                "ticket_id": row[0],
+                "status": row[1],
+                "priority": row[2],
+                "fault_type": row[3],
+                "scope": row[4],
+                "assigned_to": row[5],
+                "created_at": row[6].isoformat(),
+                "updated_at": row[7].isoformat() if row[7] else None,
+                "resolved_at": row[8].isoformat() if row[8] else None
+            })
+        
+        return {"tickets": tickets}
+        
+    except Exception as e:
+        logger.error(f"Get Tickets Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/tickets")
+def get_all_tickets(status: Optional[str] = None, limit: int = 50):
+    """
+    Tüm ticketları getirir (saha ekibi paneli için).
+    Status filtresi opsiyonel.
+    """
+    try:
+        conn = get_db_connection()
+        if not conn:
+            raise HTTPException(status_code=500, detail="Database fail")
+        
+        cursor = conn.cursor()
+        
+        if status:
+            query = """
+                SELECT 
+                    t.ticket_id, t.subscriber_id, t.status, t.priority, 
+                    t.fault_type, t.scope, t.assigned_to, t.created_at,
+                    c.name, c.location, c.phone
+                FROM tickets t
+                LEFT JOIN customers c ON t.subscriber_id = c.subscriber_id
+                WHERE t.status = %s
+                ORDER BY 
+                    CASE t.priority
+                        WHEN 'HIGH' THEN 1
+                        WHEN 'MEDIUM' THEN 2
+                        WHEN 'LOW' THEN 3
+                    END,
+                    t.created_at DESC
+                LIMIT %s
+            """
+            cursor.execute(query, (status, limit))
+        else:
+            query = """
+                SELECT 
+                    t.ticket_id, t.subscriber_id, t.status, t.priority, 
+                    t.fault_type, t.scope, t.assigned_to, t.created_at,
+                    c.name, c.location, c.phone
+                FROM tickets t
+                LEFT JOIN customers c ON t.subscriber_id = c.subscriber_id
+                WHERE t.status != 'CLOSED'
+                ORDER BY 
+                    CASE t.priority
+                        WHEN 'HIGH' THEN 1
+                        WHEN 'MEDIUM' THEN 2
+                        WHEN 'LOW' THEN 3
+                    END,
+                    t.created_at DESC
+                LIMIT %s
+            """
+            cursor.execute(query, (limit,))
+        
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        tickets = []
+        for row in rows:
+            tickets.append({
+                "ticket_id": row[0],
+                "subscriber_id": row[1],
+                "status": row[2],
+                "priority": row[3],
+                "fault_type": row[4],
+                "scope": row[5],
+                "assigned_to": row[6],
+                "created_at": row[7].isoformat(),
+                "customer_name": row[8],
+                "customer_location": row[9],
+                "customer_phone": row[10]
+            })
+        
+        return {"tickets": tickets, "count": len(tickets)}
+        
+    except Exception as e:
+        logger.error(f"Get All Tickets Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.patch("/api/tickets/{ticket_id}/status")
+def update_ticket_status(ticket_id: int, update: TicketStatusUpdate):
+    """
+    Ticket status'unu günceller ve action_log'a kaydeder.
+    """
+    try:
+        conn = get_db_connection()
+        if not conn:
+            raise HTTPException(status_code=500, detail="Database fail")
+        
+        cursor = conn.cursor()
+        
+        # 1. Mevcut status'u al
+        cursor.execute("SELECT status, subscriber_id FROM tickets WHERE ticket_id = %s", (ticket_id,))
+        result = cursor.fetchone()
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        
+        old_status, subscriber_id = result
+        
+        # 2. Status güncelle
+        if update.new_status == 'RESOLVED':
+            cursor.execute("""
+                UPDATE tickets 
+                SET status = %s, updated_at = NOW(), resolved_at = NOW()
+                WHERE ticket_id = %s
+            """, (update.new_status, ticket_id))
+        else:
+            cursor.execute("""
+                UPDATE tickets 
+                SET status = %s, updated_at = NOW()
+                WHERE ticket_id = %s
+            """, (update.new_status, ticket_id))
+        
+        # 3. Status history ekle
+        cursor.execute("""
+            INSERT INTO ticket_status_history
+            (ticket_id, old_status, new_status, changed_by, note)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (ticket_id, old_status, update.new_status, update.changed_by, update.note))
+        
+        # 4. Action log ekle
+        status_translations = {
+            'CREATED': 'Oluşturuldu',
+            'ASSIGNED': 'Atandı',
+            'EN_ROUTE': 'Yolda',
+            'ON_SITE': 'Sahada',
+            'RESOLVED': 'Çözüldü',
+            'CLOSED': 'Kapatıldı'
+        }
+        
+        log_note = f"Ticket #{ticket_id} - {status_translations.get(old_status, old_status)} → {status_translations.get(update.new_status, update.new_status)}"
+        if update.note:
+            log_note += f" | {update.note}"
+        
+        cursor.execute("""
+            INSERT INTO action_log 
+            (subscriber_id, action_type, new_status, note, timestamp)
+            VALUES (%s, %s, %s, %s, NOW())
+        """, (subscriber_id, 'ticket_status_update', update.new_status, log_note))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return {
+            "success": True,
+            "ticket_id": ticket_id,
+            "old_status": old_status,
+            "new_status": update.new_status
+        }
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.error(f"Update Ticket Status Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/tickets/{ticket_id}/note")
+def add_technician_note(ticket_id: int, note_data: TechnicianNote):
+    """
+    Teknisyen notu ekler ve action_log'a kaydeder.
+    """
+    try:
+        conn = get_db_connection()
+        if not conn:
+            raise HTTPException(status_code=500, detail="Database fail")
+        
+        cursor = conn.cursor()
+        
+        # 1. Ticket var mı kontrol et
+        cursor.execute("SELECT subscriber_id, technician_note FROM tickets WHERE ticket_id = %s", (ticket_id,))
+        result = cursor.fetchone()
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        
+        subscriber_id, existing_note = result
+        
+        # 2. Notu ekle (mevcut nota append)
+        updated_note = f"{existing_note}\n\n--- {note_data.author} ({datetime.now().strftime('%Y-%m-%d %H:%M')}) ---\n{note_data.note}"
+        
+        cursor.execute("""
+            UPDATE tickets 
+            SET technician_note = %s, updated_at = NOW()
+            WHERE ticket_id = %s
+        """, (updated_note, ticket_id))
+        
+        # 3. Action log ekle
+        cursor.execute("""
+            INSERT INTO action_log 
+            (subscriber_id, action_type, new_status, note, timestamp)
+            VALUES (%s, %s, %s, %s, NOW())
+        """, (subscriber_id, 'technician_note_added', 'INFO', f"Ticket #{ticket_id} - {note_data.author}: {note_data.note[:50]}..."))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return {"success": True, "ticket_id": ticket_id}
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.error(f"Add Note Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+

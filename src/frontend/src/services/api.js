@@ -75,5 +75,41 @@ export const api = {
         });
         if (!res.ok) throw new Error('Note generation failed');
         return await res.json();
+    },
+
+    // --- Ticket Management ---
+    getSubscriberTickets: async (subscriberId) => {
+        const res = await fetch(`${API_BASE}/api/tickets/${subscriberId}`);
+        if (!res.ok) throw new Error('Failed to fetch tickets');
+        return await res.json();
+    },
+
+    getAllTickets: async (status = null) => {
+        const url = status
+            ? `${API_BASE}/api/tickets?status=${status}`
+            : `${API_BASE}/api/tickets`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Failed to fetch tickets');
+        return await res.json();
+    },
+
+    updateTicketStatus: async (ticketId, statusData) => {
+        const res = await fetch(`${API_BASE}/api/tickets/${ticketId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(statusData)
+        });
+        if (!res.ok) throw new Error('Failed to update ticket status');
+        return await res.json();
+    },
+
+    addTechnicianNote: async (ticketId, noteData) => {
+        const res = await fetch(`${API_BASE}/api/tickets/${ticketId}/note`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(noteData)
+        });
+        if (!res.ok) throw new Error('Failed to add note');
+        return await res.json();
     }
 };
