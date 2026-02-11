@@ -223,17 +223,17 @@ const SubscriberDetail = () => {
                         </div>
                     </div>
 
-                    <div className="dashboard-card ai-analysis-card">
+                    <div className="dashboard-card ai-analysis-card" style={{ display: 'flex', flexDirection: 'column' }}>
                         <div className="card-header">
                             <h3><FaExclamationTriangle /> NetPulse AI Analizi (Admin Raporu)</h3>
                         </div>
-                        <div className="analysis-content">
-                            <div className="analysis-text" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                <p className="analysis-story">
+                        <div className="analysis-content" style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div className="analysis-text" style={{ display: 'flex', flexDirection: 'column' }}>
+                                <p className="analysis-story" style={{ marginBottom: '1.5rem' }}>
                                     {ai_analysis.story || ai_analysis.explanation}
                                 </p>
 
-                                <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
+                                <div style={{ paddingTop: '1rem', borderTop: '1px solid #f1f5f9', marginTop: 'auto' }}>
                                     <div className="analysis-meta" style={{ marginBottom: '1rem', border: 'none', padding: 0, background: 'transparent' }}>
                                         <div className="meta-item">
                                             <strong>Tahmini Çözüm:</strong> {ai_analysis.estimated_fix || 'Belirsiz'}

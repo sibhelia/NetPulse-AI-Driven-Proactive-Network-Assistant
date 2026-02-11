@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Dashboard from './pages/Dashboard';
 import SubscriberDetail from './pages/SubscriberDetail';
 import SubscriberListPage from './pages/SubscriberListPage';
@@ -35,6 +36,7 @@ function App() {
                 <main className="main-content">
                     {children}
                 </main>
+                <Footer />
             </div>
         );
     };
