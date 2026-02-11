@@ -157,6 +157,21 @@ def create_database():
         cursor.execute("CREATE INDEX idx_history_ticket ON ticket_status_history(ticket_id);")
         print("✅ Ticket index'leri oluşturuldu")
 
+        # 6. Action Log Table (İşlem Logları)
+        create_action_log = """
+        CREATE TABLE action_log (
+            id SERIAL PRIMARY KEY,
+            subscriber_id INTEGER,
+            action_type VARCHAR(50),
+            new_status VARCHAR(50),
+            note TEXT,
+            timestamp TIMESTAMP DEFAULT NOW()
+        );
+        """
+        cursor.execute(create_action_log)
+        cursor.execute("CREATE INDEX idx_action_log_subscriber ON action_log(subscriber_id);")
+        print("✅ 'action_log' tablosu oluşturuldu")
+
         # --- DATA GENERATION ---
 
         # Technicians

@@ -153,13 +153,6 @@ def home():
 from pydantic import BaseModel
 from typing import List, Optional
 
-# --- Pydantic Models ---
-class TicketRequest(BaseModel):
-    subscriber_id: int
-    technician_id: int
-    issue_type: str
-    notes: str
-
 # --- YARDIMCI ENDPOINTLER ---
 
 @app.get("/api/technicians")
@@ -170,19 +163,6 @@ def get_technicians():
     techs = cursor.fetchall()
     conn.close()
     return [{"id": t[0], "name": t[1], "expertise": t[2], "status": t[3]} for t in techs]
-
-@app.post("/api/tickets")
-def create_ticket(ticket: TicketRequest):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO tickets (subscriber_id, technician_id, issue_type, status, notes)
-        VALUES (%s, %s, %s, 'Open', %s) RETURNING ticket_id
-    """, (ticket.subscriber_id, ticket.technician_id, ticket.issue_type, ticket.notes))
-    new_id = cursor.fetchone()[0]
-    conn.commit()
-    conn.close()
-    return {"ticket_id": new_id, "status": "Created"}
 
 @app.post("/api/actions/{action_type}")
 def perform_action(action_type: str, subscriber_id: int = 0):
@@ -822,7 +802,11 @@ def create_ticket(ticket: TicketCreate):
         }
         
     except Exception as e:
-        logger.error(f"Ticket Creation Error: {e}")
+        logger.error(f"❌ Ticket Creation Error: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            conn.close()
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -36,6 +36,16 @@ const TicketModal = ({ isOpen, onClose, subscriberId, currentStatus, aiAnalysis,
     const handleSubmit = async () => {
         setLoading(true);
         try {
+            // Ticket data kontrol
+            if (!ticketData) {
+                console.error("❌ ticketData is null!");
+                alert("Lütfen bekleyin, arıza notu oluşturuluyor...");
+                setLoading(false);
+                return;
+            }
+
+            console.log("📝 Sending ticket data:", ticketData);
+
             // Ticket data hazırla
             const ticketPayload = {
                 subscriber_id: subscriberId,
@@ -46,16 +56,18 @@ const TicketModal = ({ isOpen, onClose, subscriberId, currentStatus, aiAnalysis,
                 assigned_to: "Teknisyen Ekibi"
             };
 
+            console.log("📤 Payload:", ticketPayload);
+
             const response = await api.createTicket(ticketPayload);
 
-            console.log('Ticket created:', response);
+            console.log('✅ Ticket created:', response);
 
             // Success
             onClose();
             if (onSuccess) onSuccess();
 
         } catch (error) {
-            console.error("Ticket creation error:", error);
+            console.error("❌ Ticket creation error:", error);
             alert("Arıza kaydı oluşturulamadı! Lütfen tekrar deneyin.");
         } finally {
             setLoading(false);

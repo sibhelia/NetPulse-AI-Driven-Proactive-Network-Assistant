@@ -55,7 +55,11 @@ export const api = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(ticketData)
         });
-        if (!res.ok) throw new Error('Ticket creation failed');
+        if (!res.ok) {
+            const errorData = await res.json();
+            console.error('❌ Backend error:', JSON.stringify(errorData, null, 2));
+            throw new Error(JSON.stringify(errorData.detail || errorData));
+        }
         return await res.json();
     },
 
