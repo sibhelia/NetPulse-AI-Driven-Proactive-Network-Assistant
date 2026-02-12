@@ -560,6 +560,25 @@ async def shutdown_event():
     logger.info("👋 NetPulse Backend kapatıldı")
 
 # --- 3. ENDPOINT: ENHANCED TICKET NOTE GENERATION (LLM Style) ---
+class SMSRequest(BaseModel):
+    phone_number: str
+    message: str
+
+@app.post("/api/send-sms")
+def send_sms_notification(request: SMSRequest):
+    """
+    Send SMS notification via Vonage
+    """
+    try:
+        success, response_msg = sms_sender.send_sms(request.phone_number, request.message)
+        if success:
+            return {"status": "success", "message": response_msg}
+        else:
+            raise HTTPException(status_code=500, detail=response_msg)
+    except Exception as e:
+        logger.error(f"SMS Endpoint Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 class TicketRequest(BaseModel):
     subscriber_id: int
     current_status: str

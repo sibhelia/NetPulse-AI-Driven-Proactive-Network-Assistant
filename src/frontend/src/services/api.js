@@ -70,6 +70,20 @@ export const api = {
         return await res.json();
     },
 
+    // --- SMS Notification ---
+    sendSMS: async (phoneNumber, message) => {
+        const res = await fetch(`${API_BASE}/api/send-sms`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone_number: phoneNumber, message: message })
+        });
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.detail || 'SMS gönderimi başarısız');
+        }
+        return await res.json();
+    },
+
     // --- NEW: Smart Ticket Note Generation ---
     generateTicketNote: async (data) => {
         const res = await fetch(`${API_BASE}/api/generate_ticket_note`, {

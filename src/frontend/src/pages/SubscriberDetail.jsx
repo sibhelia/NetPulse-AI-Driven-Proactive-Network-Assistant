@@ -18,6 +18,7 @@ const SubscriberDetail = () => {
     const [error, setError] = useState(null);
     const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
     const [actionLoading, setActionLoading] = useState(null);
+    const [smsLoading, setSmsLoading] = useState(false);
 
     // Mock data for sparklines (since we only have instantaneous values usually)
     const [sparkData, setSparkData] = useState([]);
@@ -247,9 +248,24 @@ const SubscriberDetail = () => {
                                     {(ai_analysis.segment === 'RED' || ai_analysis.segment === 'YELLOW') && (
                                         <button
                                             className="sms-notify-btn"
-                                            onClick={() => alert(`SMS gönderilecek: Sayın ${customer_info.name}, internet bağlantınızda bir sorun tespit ettik. Ekiplerimiz durumdan haberdar edildi ve en kısa sürede iletişime geçecektir. - NetPulse Destek`)}
+                                            onClick={async () => {
+                                                if (!window.confirm(`Sayın ${customer_info.name} abonesine SMS göndermek istediğinize emin misiniz?`)) return;
+
+                                                setSmsLoading(true);
+                                                try {
+                                                    const message = `Sayın ${customer_info.name}, internet bağlantınızda bir sorun tespit ettik. Ekiplerimiz durumdan haberdar edildi ve en kısa sürede iletişime geçecektir. - NetPulse Destek`;
+                                                    await api.sendSMS(customer_info.phone, message);
+                                                    alert("✅ SMS başarıyla gönderildi!");
+                                                } catch (err) {
+                                                    alert("❌ SMS Gönderilemedi: " + err.message);
+                                                } finally {
+                                                    setSmsLoading(false);
+                                                }
+                                            }}
+                                            disabled={smsLoading}
+                                            style={{ opacity: smsLoading ? 0.7 : 1, cursor: smsLoading ? 'wait' : 'pointer' }}
                                         >
-                                            <FaBolt /> Kullanıcıyı Bilgilendir (SMS)
+                                            <FaBolt className={smsLoading ? 'fa-spin' : ''} /> {smsLoading ? 'Gönderiliyor...' : 'Kullanıcıyı Bilgilendir (SMS)'}
                                         </button>
                                     )}
                                 </div>
