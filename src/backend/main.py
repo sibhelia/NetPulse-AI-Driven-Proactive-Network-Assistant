@@ -571,23 +571,34 @@ async def shutdown_event():
     logger.info("👋 NetPulse Backend kapatıldı")
 
 # --- 3. ENDPOINT: ENHANCED TICKET NOTE GENERATION (LLM Style) ---
-class SMSRequest(BaseModel):
-    phone_number: str
+class TelegramNotificationRequest(BaseModel):
+    subscriber_id: int
+    subscriber_name: str
     message: str
 
-@app.post("/api/send-sms")
-def send_sms_notification(request: SMSRequest):
+@app.post("/api/send-telegram-notification")
+def send_telegram_notification(request: TelegramNotificationRequest):
     """
-    Send SMS notification via Vonage
+    Send Telegram notification to user
     """
     try:
-        success, response_msg = sms_sender.send_sms(request.phone_number, request.message)
+        # Format professional notification message
+        notification_text = f"""🔔 **NetPulse Bildirim**
+
+📍 Abone: {request.subscriber_name} (#{request.subscriber_id})
+
+{request.message}
+
+_NetPulse NOC Sistemi_
+"""
+        
+        success, response_msg = telegram_service.send_telegram_message(notification_text)
         if success:
             return {"status": "success", "message": response_msg}
         else:
             raise HTTPException(status_code=500, detail=response_msg)
     except Exception as e:
-        logger.error(f"SMS Endpoint Error: {e}")
+        logger.error(f"Telegram Endpoint Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 class TicketRequest(BaseModel):

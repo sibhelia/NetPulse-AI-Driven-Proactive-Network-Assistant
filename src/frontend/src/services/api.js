@@ -70,16 +70,20 @@ export const api = {
         return await res.json();
     },
 
-    // --- SMS Notification ---
-    sendSMS: async (phoneNumber, message) => {
-        const res = await fetch(`${API_BASE}/api/send-sms`, {
+    // --- Telegram Notification ---
+    sendTelegramNotification: async (subscriberId, subscriberName, message) => {
+        const res = await fetch(`${API_BASE}/api/send-telegram-notification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone_number: phoneNumber, message: message })
+            body: JSON.stringify({
+                subscriber_id: subscriberId,
+                subscriber_name: subscriberName,
+                message: message
+            })
         });
         if (!res.ok) {
             const errorData = await res.json();
-            throw new Error(errorData.detail || 'SMS gönderimi başarısız');
+            throw new Error(errorData.detail || 'Telegram bildirimi gönderilemedi');
         }
         return await res.json();
     },

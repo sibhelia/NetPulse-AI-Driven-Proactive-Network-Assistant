@@ -244,20 +244,35 @@ const SubscriberDetail = () => {
                                         </div>
                                     </div>
 
-                                    {/* SMS Notification Button for RED/YELLOW status */}
+                                    {/* Telegram Notification Button for RED/YELLOW status */}
                                     {(ai_analysis.segment === 'RED' || ai_analysis.segment === 'YELLOW') && (
                                         <button
                                             className="sms-notify-btn"
                                             onClick={async () => {
-                                                if (!window.confirm(`Sayın ${customer_info.name} abonesine SMS göndermek istediğinize emin misiniz?`)) return;
+                                                if (!window.confirm(`${customer_info.name} abonesine Telegram bildirimi göndermek istediğinize emin misiniz?`)) return;
 
                                                 setSmsLoading(true);
                                                 try {
-                                                    const message = `Sayın ${customer_info.name}, internet bağlantınızda bir sorun tespit ettik. Ekiplerimiz durumdan haberdar edildi ve en kısa sürede iletişime geçecektir. - NetPulse Destek`;
-                                                    await api.sendSMS(customer_info.phone, message);
-                                                    alert("✅ SMS başarıyla gönderildi!");
+                                                    const statusText = ai_analysis.segment === 'RED' ? '🔴 Kritik Arıza' : '🟡 Performans Uyarısı';
+                                                    const message = `${statusText}
+
+İnternet bağlantınızda ${ai_analysis.segment === 'RED' ? 'kritik bir arıza' : 'performans düşüklüğü'} tespit edildi.
+
+📊 **Durum Özeti:**
+${ai_analysis.story}
+
+⏱️ **Tahmini Çözüm Süresi:** ${ai_analysis.estimated_fix}
+
+Ekiplerimiz durumdan haberdar edildi ve çalışmalar devam ediyor. İlerlemeler hakkında bilgilendirileceksiniz.`;
+
+                                                    await api.sendTelegramNotification(
+                                                        subscriber.subscriber_id,
+                                                        customer_info.name,
+                                                        message
+                                                    );
+                                                    alert("✅ Telegram bildirimi başarıyla gönderildi!");
                                                 } catch (err) {
-                                                    alert("❌ SMS Gönderilemedi: " + err.message);
+                                                    alert("❌ Bildirim Gönderilemedi: " + err.message);
                                                 } finally {
                                                     setSmsLoading(false);
                                                 }
@@ -265,7 +280,7 @@ const SubscriberDetail = () => {
                                             disabled={smsLoading}
                                             style={{ opacity: smsLoading ? 0.7 : 1, cursor: smsLoading ? 'wait' : 'pointer' }}
                                         >
-                                            <FaBolt className={smsLoading ? 'fa-spin' : ''} /> {smsLoading ? 'Gönderiliyor...' : 'Kullanıcıyı Bilgilendir (SMS)'}
+                                            <FaBolt className={smsLoading ? 'fa-spin' : ''} /> {smsLoading ? 'Gönderiliyor...' : 'Kullanıcıyı Bilgilendir (Telegram)'}
                                         </button>
                                     )}
                                 </div>

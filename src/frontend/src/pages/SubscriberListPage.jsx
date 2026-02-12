@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { FaArrowLeft, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { exportListToExcel } from '../utils/exportUtils';
 import './SubscriberListPage.css';
 
 const SubscriberListPage = () => {
@@ -104,10 +105,39 @@ const SubscriberListPage = () => {
         <div className="list-page-wrapper">
             <div className="list-page-content">
                 <header className="list-header">
-                    <button className="back-btn" onClick={() => navigate('/')} title="Geri Dön">
-                        <FaArrowLeft />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <button className="back-btn" onClick={() => navigate('/')} title="Geri Dön">
+                            <FaArrowLeft />
+                        </button>
+                        <h2>{getPageTitle()}</h2>
+                    </div>
+
+                    {/* Excel Export Button - Sağ üstte */}
+                    <button
+                        className="export-btn"
+                        onClick={() => exportListToExcel(subscribers, getPageTitle())}
+                        disabled={subscribers.length === 0}
+                        style={{
+                            position: 'absolute',
+                            top: '1.5rem',
+                            right: '1.5rem',
+                            backgroundColor: '#6366f1',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '8px',
+                            cursor: subscribers.length === 0 ? 'not-allowed' : 'pointer',
+                            fontWeight: '600',
+                            fontSize: '0.9rem',
+                            transition: 'all 0.2s',
+                            opacity: subscribers.length === 0 ? 0.5 : 1,
+                            zIndex: 10
+                        }}
+                        onMouseOver={(e) => subscribers.length > 0 && (e.target.style.backgroundColor = '#4f46e5')}
+                        onMouseOut={(e) => e.target.style.backgroundColor = '#6366f1'}
+                    >
+                        Excel'e Aktar
                     </button>
-                    <h2>{getPageTitle()}</h2>
                 </header>
 
                 {loading ? (
