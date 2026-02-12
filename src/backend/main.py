@@ -254,6 +254,10 @@ def simulate_network(subscriber_id: int, force_trouble: bool = False):
 
     live_data, fault_details, is_faulty = simulate_metrics_single(plan, force_trouble=(force_trouble or force_metrics_state is not None))
     
+    # [DEMO FIX] Force Subscriber 1001 to be ALWAYS RED (Faulty)
+    if subscriber_id == 1001:
+        force_metrics_state = "RED"
+        
     # Override metrics if specific state needed to match DB
     if force_metrics_state == "RED":
         live_data["packet_loss"] = random.uniform(15, 40)
@@ -405,6 +409,13 @@ def scan_network_batch():
         
         ai_pred = 0
         
+        # [DEMO FIX] Force Subscriber 1001 to be ALWAYS RED
+        if sub_id == 1001:
+             metrics["packet_loss"] = random.uniform(20, 50)
+             metrics["download_speed"] = random.uniform(0.5, 2.0)
+             metrics["latency"] = random.uniform(150, 300)
+             ai_pred = 2 # Force AI Fault prediction
+             rand_val = 0 # Disable random logic for this user
         
         
         # Kırmızı Durumu Simüle Et (%0.05 Olasılık -> Her 2000 taramada 1)

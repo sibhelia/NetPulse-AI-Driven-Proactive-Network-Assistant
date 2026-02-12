@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 # Vonage Credentials (Environment Variables)
 VONAGE_API_KEY = os.getenv("VONAGE_API_KEY", "")
 VONAGE_API_SECRET = os.getenv("VONAGE_API_SECRET", "")
-VONAGE_BRAND_NAME = os.getenv("VONAGE_BRAND_NAME", "NetPulse")
+VONAGE_BRAND_NAME = os.getenv("VONAGE_BRAND_NAME", "905366251652")
 
 def send_sms(phone_number: str, message: str) -> tuple[bool, str]:
     """
