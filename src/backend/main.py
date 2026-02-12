@@ -10,7 +10,7 @@ import random
 import time
 import logging
 from datetime import datetime
-import llm_service, sms_sender
+import llm_service, telegram_service
 from lstm_service import (
     LSTMPredictionService,
     HybridEnsembleModel,
